@@ -1,0 +1,593 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class ComfyUIController extends Controller
+{
+    protected $comfyUrl;
+
+    public function __construct()
+    {
+        $this->comfyUrl = env('COMFYUI_URL', 'http://127.0.0.1:8188');
+    }
+
+    public function index()
+    {
+        return view('comfy');
+    }
+
+    public function generate(Request $request)
+    {
+        try {
+            Log::info('Generate request received');
+            
+            // Validate input
+            $validated = $request->validate([
+                'model'                     => 'required|string',
+                'positive_prompt'           => 'required|string',
+                'negative_prompt'           => 'nullable|string',
+                'steps'                     => 'integer|min:1|max:100',
+                'cfg'                       => 'numeric|min:1|max:20',
+                'width'                     => 'integer|min:256|max:1536',
+                'height'                    => 'integer|min:256|max:1536',
+                'sampler'                   => 'string',
+                'controlnet'                => 'nullable|array',
+                'controlnet.enabled'        => 'boolean',
+                'controlnet.preprocessor'   => 'string',
+                'controlnet.image_base64'   => 'nullable|string',
+                'controlnet.strength'       => 'numeric|min:0|max:2',
+                'controlnet.start_percent'  => 'numeric|min:0|max:1',
+                'controlnet.end_percent'    => 'numeric|min:0|max:1',
+            ]);
+
+            // Build workflow
+            if (!empty($validated['controlnet']['enabled']) && !empty($validated['controlnet']['image_base64'])) {
+                $workflow = $this->buildControlNetWorkflow($validated);
+            } else {
+                $workflow = $this->buildBaseWorkflow($validated);
+            }
+
+            // Send to ComfyUI
+            $response = Http::timeout(180)->post($this->comfyUrl . '/prompt', [
+                'prompt' => $workflow,
+                'client_id' => $request->input('client_id', 'laravel-client'),
+            ]);
+
+            if ($response->failed()) {
+                $errorBody = $response->body();
+                Log::error('ComfyUI error', ['body' => $errorBody]);
+                return response()->json(['error' => 'ComfyUI error: ' . $errorBody], 500);
+            }
+
+            $data = $response->json();
+
+            return response()->json([
+                'success' => true,
+                'prompt_id' => $data['prompt_id']
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Generation failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    protected function buildBaseWorkflow(array $params)
+    {
+        // Good config pattern - Checkpoint at "4", KSampler at "3"
+        return [
+            "4" => [
+                "class_type" => "CheckpointLoaderSimple",
+                "inputs" => ["ckpt_name" => $params['model']]
+            ],
+            "5" => [
+                "class_type" => "EmptyLatentImage",
+                "inputs" => [
+                    "width" => $params['width'],
+                    "height" => $params['height'],
+                    "batch_size" => 1
+                ]
+            ],
+            "6" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['positive_prompt'],
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "7" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['negative_prompt'] ?? "",
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "3" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => rand(1, 999999999),
+                    "steps" => $params['steps'],
+                    "cfg" => $params['cfg'],
+                    "sampler_name" => $params['sampler'],
+                    "scheduler" => "normal",
+                    "denoise" => 1,
+                    "model" => ["4", 0],
+                    "positive" => ["6", 0],
+                    "negative" => ["7", 0],
+                    "latent_image" => ["5", 0]
+                ]
+            ],
+            "8" => [
+                "class_type" => "VAEDecode",
+                "inputs" => [
+                    "samples" => ["3", 0],
+                    "vae" => ["4", 2]
+                ]
+            ],
+            "9" => [
+                "class_type" => "SaveImage",
+                "inputs" => [
+                    "filename_prefix" => "generated",
+                    "images" => ["8", 0]
+                ]
+            ]
+        ];
+    }
+
+    protected function buildControlNetWorkflow(array $params)
+{
+    Log::info('=== CONTROLNET WORKFLOW BUILD ===', [
+        'preprocessor' => $params['controlnet']['preprocessor'] ?? 'canny',
+        'strength' => $params['controlnet']['strength'] ?? 0.85,
+        'has_image' => !empty($params['controlnet']['image_base64'])
+    ]);
+    
+    // Save control image
+    $controlImage = $params['controlnet']['image_base64'];
+    $strength = $params['controlnet']['strength'] ?? 0.85;
+    $startPercent = $params['controlnet']['start_percent'] ?? 0.0;
+    $endPercent = $params['controlnet']['end_percent'] ?? 1.0;
+    $preprocessor = $params['controlnet']['preprocessor'] ?? 'canny';
+    $controlNetStrength = $params['controlnet']['controlnet_strength'] ?? $strength;
+    
+    // Clean and save image
+    if (strpos($controlImage, 'base64,') !== false) {
+        $controlImage = explode('base64,', $controlImage)[1];
+    }
+    
+    // Remove any whitespace or line breaks
+    $controlImage = preg_replace('/\s+/', '', $controlImage);
+    
+    $imageData = base64_decode($controlImage);
+    if ($imageData === false) {
+        throw new \Exception('Failed to decode base64 image');
+    }
+    
+    $filename = 'control_' . uniqid() . '.png';
+    
+    // Try multiple input directories
+    $inputDir = env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input');
+    $possiblePaths = [
+        $inputDir,
+        storage_path('app/comfyui/input'),
+        public_path('comfyui_input'),
+        sys_get_temp_dir() . '/comfyui_input',
+        '/tmp/comfyui_input'
+    ];
+    
+    $savedPath = null;
+    foreach ($possiblePaths as $path) {
+        if (!file_exists($path)) {
+            @mkdir($path, 0777, true);
+        }
+        
+        if (is_writable($path)) {
+            $fullPath = $path . '/' . $filename;
+            if (file_put_contents($fullPath, $imageData) !== false) {
+                $savedPath = $fullPath;
+                Log::info('Image saved successfully', ['path' => $savedPath]);
+                break;
+            }
+        }
+    }
+    
+    if (!$savedPath) {
+        throw new \Exception('Failed to save control image to any writable directory');
+    }
+    
+    // Get ControlNet model based on preprocessor (using available models from ComfyUI)
+    $controlnetModel = $this->getControlNetModel($preprocessor);
+    
+    // Build workflow
+    $workflow = [
+        // Checkpoint Loader (node 4)
+        "4" => [
+            "class_type" => "CheckpointLoaderSimple",
+            "inputs" => ["ckpt_name" => $params['model']]
+        ],
+        
+        // Load Image (node 10)
+        "10" => [
+            "class_type" => "LoadImage",
+            "inputs" => ["image" => $filename]
+        ],
+        
+        // Preprocessor node (node 11) - FIXED: Use correct threshold values (0-1 range)
+        "11" => $this->getPreprocessorNode($preprocessor, "10"),
+        
+        // ControlNet Loader (node 12) - FIXED: Use correct model name
+        "12" => [
+            "class_type" => "ControlNetLoader",
+            "inputs" => ["control_net_name" => $controlnetModel]
+        ],
+        
+        // Empty Latent (node 5)
+        "5" => [
+            "class_type" => "EmptyLatentImage",
+            "inputs" => [
+                "width" => (int)($params['width'] ?? 512),
+                "height" => (int)($params['height'] ?? 512),
+                "batch_size" => 1
+            ]
+        ],
+        
+        // CLIP Text Encode Positive (node 6)
+        "6" => [
+            "class_type" => "CLIPTextEncode",
+            "inputs" => [
+                "text" => $params['positive_prompt'],
+                "clip" => ["4", 1]
+            ]
+        ],
+        
+        // CLIP Text Encode Negative (node 7)
+        "7" => [
+            "class_type" => "CLIPTextEncode",
+            "inputs" => [
+                "text" => $params['negative_prompt'] ?? "",
+                "clip" => ["4", 1]
+            ]
+        ],
+        
+        // ControlNet Apply (node 13)
+        "13" => [
+            "class_type" => "ControlNetApplyAdvanced",
+            "inputs" => [
+                "positive" => ["6", 0],
+                "negative" => ["7", 0],
+                "control_net" => ["12", 0],
+                "image" => ["11", 0],
+                "strength" => (float)$controlNetStrength,
+                "start_percent" => (float)$startPercent,
+                "end_percent" => (float)$endPercent
+            ]
+        ],
+        
+        // KSampler (node 3)
+        "3" => [
+            "class_type" => "KSampler",
+            "inputs" => [
+                "seed" => rand(1, 999999999),
+                "steps" => (int)($params['steps'] ?? 20),
+                "cfg" => (float)($params['cfg'] ?? 7.5),
+                "sampler_name" => $params['sampler'] ?? 'euler',
+                "scheduler" => "normal",
+                "denoise" => 1,
+                "model" => ["4", 0],
+                "positive" => ["13", 0],
+                "negative" => ["13", 1],
+                "latent_image" => ["5", 0]
+            ]
+        ],
+        
+        // VAEDecode (node 8)
+        "8" => [
+            "class_type" => "VAEDecode",
+            "inputs" => [
+                "samples" => ["3", 0],
+                "vae" => ["4", 2]
+            ]
+        ],
+        
+        // SaveImage (node 9)
+        "9" => [
+            "class_type" => "SaveImage",
+            "inputs" => [
+                "filename_prefix" => "controlnet_" . $preprocessor,
+                "images" => ["8", 0]
+            ]
+        ]
+    ];
+    
+    // Validate required nodes
+    $requiredNodes = ['4', '10', '11', '12', '5', '6', '7', '13', '3', '8', '9'];
+    foreach ($requiredNodes as $nodeId) {
+        if (!isset($workflow[$nodeId])) {
+            throw new \Exception("Required node {$nodeId} is missing from workflow");
+        }
+    }
+    
+    Log::info('ControlNet workflow built successfully', [
+        'nodes' => array_keys($workflow),
+        'preprocessor' => $workflow['11']['class_type'],
+        'controlnet_model' => $controlnetModel,
+        'image_path' => $savedPath
+    ]);
+    
+    return $workflow;
+}
+
+    protected function getControlNetModel($preprocessor)
+{
+    // Use only the models that are actually available in your ComfyUI
+    // Based on the error message, these are the available models:
+    $models = [
+        'canny' => 'control_sd15_canny.pth',      // FIXED: Use available model
+        'depth' => 'control_sd15_depth.pth',      // FIXED: Use available model
+        'openpose' => 'control_sd15_openpose.pth', // FIXED: Use available model
+        'scribble' => 'control_sd15_scribble.pth', // FIXED: Use available model
+        'mlsd' => 'control_sd15_mlsd.pth',        // FIXED: Use available model
+        'hed' => 'control_sd15_hed.pth',          // FIXED: Use available model
+        'seg' => 'control_sd15_seg.pth',          // FIXED: Use available model
+        'normal' => 'control_sd15_normal.pth'     // FIXED: Use available model
+    ];
+    
+    $model = $models[$preprocessor] ?? 'control_sd15_canny.pth';
+    
+    Log::info('Using ControlNet model', ['model' => $model, 'preprocessor' => $preprocessor]);
+    
+    return $model;
+}
+
+    protected function getPreprocessorNode($preprocessor, $imageNode)
+{
+    $preprocessorMap = [
+        'canny' => [
+            "class_type" => "Canny",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "low_threshold" => 0.4,   // FIXED: Use 0-1 range (was 50)
+                "high_threshold" => 0.8   // FIXED: Use 0-1 range (was 150)
+            ]
+        ],
+        'depth' => [
+            "class_type" => "DepthAnythingPreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "resolution" => 512
+            ]
+        ],
+        'openpose' => [
+            "class_type" => "OpenposePreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "detect_hand" => "enable",
+                "detect_body" => "enable",
+                "detect_face" => "disable"
+            ]
+        ],
+        'scribble' => [
+            "class_type" => "ScribblePreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "resolution" => 512
+            ]
+        ],
+        'mlsd' => [
+            "class_type" => "M-LSDPreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "score_threshold" => 0.1,  // Renamed from 'threshold'
+                "dist_threshold" => 0.1,   // Added this required argument
+                "resolution" => 512
+            ]
+        ],
+        'hed' => [
+            "class_type" => "HEDPreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "safe" => "enable",
+                "resolution" => 512
+            ]
+        ],
+        'seg' => [
+            "class_type" => "SegformerPreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "resolution" => 512
+            ]
+        ],
+        'normal' => [
+            "class_type" => "NormalMapPreprocessor",
+            "inputs" => [
+                "image" => [$imageNode, 0],
+                "resolution" => 512
+            ]
+        ]
+    ];
+    
+    if (!isset($preprocessorMap[$preprocessor])) {
+        Log::warning("Preprocessor {$preprocessor} not found, falling back to canny");
+        return $preprocessorMap['canny'];
+    }
+    
+    return $preprocessorMap[$preprocessor];
+}
+
+    public function health()
+    {
+        try {
+            $response = Http::timeout(5)->get($this->comfyUrl . '/');
+            return response()->json(['status' => 'connected']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'disconnected'], 500);
+        }
+    }
+
+    public function recentImages()
+    {
+        try {
+            $outputPath = env('COMFYUI_OUTPUT_DIR', '/home/batkhuu/ComfyUI/output');
+            $images = [];
+            
+            if (file_exists($outputPath)) {
+                $files = glob($outputPath . '/*.png');
+                usort($files, function($a, $b) {
+                    return filemtime($b) - filemtime($a);
+                });
+                
+                foreach (array_slice($files, 0, 20) as $file) {
+                    $images[] = ['filename' => basename($file)];
+                }
+            }
+            
+            return response()->json(['images' => $images]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function availablePreprocessors()
+    {
+        return response()->json([
+            'available_preprocessors' => ['canny', 'depth', 'openpose', 'scribble', 'mlsd', 'hed', 'seg', 'normal']
+        ]);
+    }
+
+    public function debugPermissions()
+    {
+        $paths = [
+            env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input'),
+            storage_path('app/comfyui/input'),
+            public_path('comfyui_input'),
+            sys_get_temp_dir() . '/comfyui_input',
+            '/tmp/comfyui_input'
+        ];
+        
+        $results = [];
+        foreach ($paths as $path) {
+            $results[] = [
+                'path' => $path,
+                'exists' => file_exists($path),
+                'writable' => is_writable($path)
+            ];
+        }
+        
+        return response()->json($results);
+    }
+
+    public function debugComfyUI()
+    {
+        try {
+            $response = Http::timeout(5)->get($this->comfyUrl . '/');
+            return response()->json([
+                'reachable' => $response->successful(),
+                'status' => $response->status()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function debugHistory()
+    {
+        try {
+            $response = Http::timeout(10)->get($this->comfyUrl . '/history');
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function testWorkflow(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'model' => 'required|string',
+                'positive_prompt' => 'required|string',
+                'negative_prompt' => 'nullable|string',
+                'steps' => 'integer|min:1|max:100',
+                'cfg' => 'numeric|min:1|max:20',
+                'width' => 'integer|min:256|max:1536',
+                'height' => 'integer|min:256|max:1536',
+                'sampler' => 'string',
+            ]);
+
+            $workflow = $this->buildBaseWorkflow($validated);
+            
+            return response()->json([
+                'success' => true,
+                'workflow' => $workflow,
+                'node_count' => count($workflow)
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function debugModels()
+    {
+        try {
+            $results = [];
+            
+            // Check available checkpoints
+            $checkpointPath = env('COMFYUI_MODELS_DIR', '/home/batkhuu/ComfyUI/models/checkpoints');
+            $checkpoints = [];
+            if (file_exists($checkpointPath)) {
+                $checkpoints = array_values(array_diff(scandir($checkpointPath), ['.', '..']));
+            }
+            $results['checkpoints'] = [
+                'path' => $checkpointPath,
+                'exists' => file_exists($checkpointPath),
+                'files' => $checkpoints
+            ];
+            
+            // Check available ControlNet models
+            $controlnetPath = env('COMFYUI_CONTROLNET_DIR', '/home/batkhuu/ComfyUI/models/controlnet');
+            $controlnets = [];
+            if (file_exists($controlnetPath)) {
+                $controlnets = array_values(array_diff(scandir($controlnetPath), ['.', '..']));
+            }
+            $results['controlnet_models'] = [
+                'path' => $controlnetPath,
+                'exists' => file_exists($controlnetPath),
+                'files' => $controlnets
+            ];
+            
+            // Get ComfyUI object info to see available nodes
+            $response = Http::timeout(10)->get($this->comfyUrl . '/object_info');
+            if ($response->successful()) {
+                $nodes = $response->json();
+                $controlnetNodes = [];
+                $preprocessorNodes = [];
+                
+                foreach ($nodes as $nodeName => $nodeInfo) {
+                    if (strpos($nodeName, 'ControlNet') !== false) {
+                        $controlnetNodes[] = $nodeName;
+                    }
+                    if (strpos($nodeName, 'Preprocessor') !== false || 
+                        strpos($nodeName, 'Canny') !== false ||
+                        strpos($nodeName, 'Depth') !== false ||
+                        strpos($nodeName, 'OpenPose') !== false) {
+                        $preprocessorNodes[] = $nodeName;
+                    }
+                }
+                
+                $results['comfyui_nodes'] = [
+                    'controlnet_nodes' => $controlnetNodes,
+                    'preprocessor_nodes' => $preprocessorNodes
+                ];
+            }
+            
+            return response()->json($results);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+}

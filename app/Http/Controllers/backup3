@@ -1,0 +1,567 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class ComfyUIController extends Controller
+{
+    protected $comfyUrl;
+
+    public function __construct()
+    {
+        $this->comfyUrl = env('COMFYUI_URL', 'http://127.0.0.1:8188');
+    }
+
+    public function index()
+    {
+        return view('comfy');
+    }
+
+    public function generate(Request $request)
+    {
+        try {
+            Log::info('Generate request received', [
+                'client_id' => $request->input('client_id'),
+                'model' => $request->input('model'),
+                'has_controlnet' => !empty($request->input('controlnet.enabled'))
+            ]);
+
+            // Validate the request
+            $validated = $request->validate([
+                'client_id' => 'nullable|string',
+                'model' => 'required|string',
+                'positive_prompt' => 'required|string',
+                'negative_prompt' => 'nullable|string',
+                'steps' => 'integer|min:1|max:100',
+                'cfg' => 'numeric|min:1|max:20',
+                'width' => 'integer|min:256|max:1536',
+                'height' => 'integer|min:256|max:1536',
+                'sampler' => 'string',
+                'controlnet' => 'nullable|array',
+                'controlnet.enabled' => 'boolean',
+                'controlnet.preprocessor' => 'nullable|string',
+                'controlnet.image_base64' => 'nullable|string',
+                'controlnet.strength' => 'nullable|numeric|min:0|max:2',
+                'controlnet.start_percent' => 'nullable|numeric|min:0|max:1',
+                'controlnet.end_percent' => 'nullable|numeric|min:0|max:1',
+            ]);
+
+            // Set default client_id if not provided
+            $clientId = $validated['client_id'] ?? 'laravel-client-' . uniqid();
+
+            // Build workflow based on whether ControlNet is enabled
+            if (!empty($validated['controlnet']['enabled']) &&
+                !empty($validated['controlnet']['image_base64'])) {
+                $workflow = $this->buildControlNetWorkflow($validated);
+            } else {
+                $workflow = $this->buildBaseWorkflow($validated);
+            }
+
+            // Send to ComfyUI
+            $response = Http::timeout(180)->post($this->comfyUrl . '/prompt', [
+                'prompt' => $workflow,
+                'client_id' => $clientId,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('ComfyUI error', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ComfyUI error: ' . $response->body()
+                ], 500);
+            }
+
+            $data = $response->json();
+
+            return response()->json([
+                'success' => true,
+                'prompt_id' => $data['prompt_id'],
+                'message' => 'Generation started successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Workflow builders
+    // ----------------------------------------------------------------------
+
+    protected function buildBaseWorkflow(array $params)
+    {
+        return [
+            "4" => [
+                "class_type" => "CheckpointLoaderSimple",
+                "inputs" => ["ckpt_name" => $params['model']]
+            ],
+            "5" => [
+                "class_type" => "EmptyLatentImage",
+                "inputs" => [
+                    "width" => (int)($params['width'] ?? 512),
+                    "height" => (int)($params['height'] ?? 512),
+                    "batch_size" => 1
+                ]
+            ],
+            "6" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['positive_prompt'],
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "7" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['negative_prompt'] ?? "",
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "3" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => rand(1, 999999999),
+                    "steps" => (int)($params['steps'] ?? 20),
+                    "cfg" => (float)($params['cfg'] ?? 7.5),
+                    "sampler_name" => $params['sampler'] ?? 'euler',
+                    "scheduler" => "normal",
+                    "denoise" => 1,
+                    "model" => ["4", 0],
+                    "positive" => ["6", 0],
+                    "negative" => ["7", 0],
+                    "latent_image" => ["5", 0]
+                ]
+            ],
+            "8" => [
+                "class_type" => "VAEDecode",
+                "inputs" => [
+                    "samples" => ["3", 0],
+                    "vae" => ["4", 2]
+                ]
+            ],
+            "9" => [
+                "class_type" => "SaveImage",
+                "inputs" => [
+                    "filename_prefix" => "generated",
+                    "images" => ["8", 0]
+                ]
+            ]
+        ];
+    }
+
+    protected function buildControlNetWorkflow(array $params)
+    {
+        $controlnet = $params['controlnet'];
+        $preprocessor = $controlnet['preprocessor'] ?? 'canny';
+        $strength = (float)($controlnet['strength'] ?? 0.85);
+        $startPercent = (float)($controlnet['start_percent'] ?? 0.0);
+        $endPercent = (float)($controlnet['end_percent'] ?? 1.0);
+
+        // Save the control image
+        $imageBase64 = $controlnet['image_base64'];
+        if (strpos($imageBase64, 'base64,') !== false) {
+            $imageBase64 = explode('base64,', $imageBase64)[1];
+        }
+
+        $imageData = base64_decode($imageBase64);
+        $filename = 'control_' . uniqid() . '.png';
+
+        // Try to save to ComfyUI input directory
+        $inputDir = env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input');
+        if (!file_exists($inputDir)) {
+            mkdir($inputDir, 0777, true);
+        }
+
+        $fullPath = $inputDir . '/' . $filename;
+        file_put_contents($fullPath, $imageData);
+
+        // Build workflow with ControlNet
+        return [
+            "4" => [
+                "class_type" => "CheckpointLoaderSimple",
+                "inputs" => ["ckpt_name" => $params['model']]
+            ],
+            "10" => [
+                "class_type" => "LoadImage",
+                "inputs" => ["image" => $filename]
+            ],
+            "11" => $this->getPreprocessorNode($preprocessor, "10"),
+            "12" => [
+                "class_type" => "ControlNetLoader",
+                "inputs" => ["control_net_name" => $this->getControlNetModel($preprocessor)]
+            ],
+            "5" => [
+                "class_type" => "EmptyLatentImage",
+                "inputs" => [
+                    "width" => (int)($params['width'] ?? 512),
+                    "height" => (int)($params['height'] ?? 512),
+                    "batch_size" => 1
+                ]
+            ],
+            "6" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['positive_prompt'],
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "7" => [
+                "class_type" => "CLIPTextEncode",
+                "inputs" => [
+                    "text" => $params['negative_prompt'] ?? "",
+                    "clip" => ["4", 1]
+                ]
+            ],
+            "13" => [
+                "class_type" => "ControlNetApplyAdvanced",
+                "inputs" => [
+                    "positive" => ["6", 0],
+                    "negative" => ["7", 0],
+                    "control_net" => ["12", 0],
+                    "image" => ["11", 0],
+                    "strength" => $strength,
+                    "start_percent" => $startPercent,
+                    "end_percent" => $endPercent
+                ]
+            ],
+            "3" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => rand(1, 999999999),
+                    "steps" => (int)($params['steps'] ?? 20),
+                    "cfg" => (float)($params['cfg'] ?? 7.5),
+                    "sampler_name" => $params['sampler'] ?? 'euler',
+                    "scheduler" => "normal",
+                    "denoise" => 1,
+                    "model" => ["4", 0],
+                    "positive" => ["13", 0],
+                    "negative" => ["13", 1],
+                    "latent_image" => ["5", 0]
+                ]
+            ],
+            "8" => [
+                "class_type" => "VAEDecode",
+                "inputs" => [
+                    "samples" => ["3", 0],
+                    "vae" => ["4", 2]
+                ]
+            ],
+            "9" => [
+                "class_type" => "SaveImage",
+                "inputs" => [
+                    "filename_prefix" => "controlnet_" . $preprocessor,
+                    "images" => ["8", 0]
+                ]
+            ]
+        ];
+    }
+
+    protected function getPreprocessorNode($preprocessor, $imageNode)
+    {
+        $preprocessors = [
+            'canny' => [
+                "class_type" => "Canny",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "low_threshold" => 0.196,
+                    "high_threshold" => 0.588
+                ]
+            ],
+            'depth' => [
+                "class_type" => "DepthAnythingPreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "resolution" => 512
+                ]
+            ],
+            'openpose' => [
+                "class_type" => "OpenposePreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "detect_hand" => "enable",
+                    "detect_body" => "enable",
+                    "detect_face" => "disable"
+                ]
+            ],
+            'scribble' => [
+                "class_type" => "ScribblePreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "resolution" => 512
+                ]
+            ],
+            'mlsd' => [
+                "class_type" => "M-LSDPreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "score_threshold" => 0.1,
+                    "dist_threshold" => 0.1,
+                    "resolution" => 512
+                ]
+            ],
+            'hed' => [
+                "class_type" => "HEDPreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "safe" => "enable",
+                    "resolution" => 512
+                ]
+            ],
+            'seg' => [
+                "class_type" => "SegformerPreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "resolution" => 512
+                ]
+            ],
+            'normal' => [
+                "class_type" => "NormalMapPreprocessor",
+                "inputs" => [
+                    "image" => [$imageNode, 0],
+                    "resolution" => 512
+                ]
+            ]
+        ];
+
+        return $preprocessors[$preprocessor] ?? $preprocessors['canny'];
+    }
+
+    protected function getControlNetModel($preprocessor)
+    {
+        $models = [
+            'canny' => 'control_sd15_canny.pth',
+            'depth' => 'control_sd15_depth.pth',
+            'openpose' => 'control_sd15_openpose.pth',
+            'scribble' => 'control_sd15_scribble.pth',
+            'mlsd' => 'control_sd15_mlsd.pth',
+            'hed' => 'control_sd15_hed.pth',
+            'seg' => 'control_sd15_seg.pth',
+            'normal' => 'control_sd15_normal.pth'
+        ];
+
+        return $models[$preprocessor] ?? 'control_sd15_canny.pth';
+    }
+
+    // ----------------------------------------------------------------------
+    // Proxy methods (to avoid CORS)
+    // ----------------------------------------------------------------------
+
+    /**
+     * Proxy history requests to ComfyUI
+     */
+    public function proxyHistory(Request $request)
+    {
+        try {
+            $response = Http::timeout(30)->get($this->comfyUrl . '/history');
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Failed to fetch history'], 500);
+            }
+
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            Log::error('Proxy history error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Proxy image view requests
+     */
+    public function proxyView(Request $request)
+    {
+        try {
+            $filename = $request->query('filename');
+            if (empty($filename)) {
+                return response()->json(['error' => 'Filename parameter is required'], 400);
+            }
+
+            $subfolder = $request->query('subfolder', '');
+            $type = $request->query('type', 'output');
+
+            $url = $this->comfyUrl . '/view';
+            $url .= '?filename=' . urlencode($filename);
+            if ($subfolder) {
+                $url .= '&subfolder=' . urlencode($subfolder);
+            }
+            $url .= '&type=' . urlencode($type);
+
+            $response = Http::timeout(30)->get($url);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Image not found'], 404);
+            }
+
+            // Return the image with proper headers
+            return response($response->body())
+                ->header('Content-Type', $response->header('Content-Type'));
+        } catch (\Exception $e) {
+            Log::error('Proxy view error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Proxy interrupt requests
+     */
+    public function proxyInterrupt(Request $request)
+    {
+        try {
+            $response = Http::timeout(10)->post($this->comfyUrl . '/interrupt');
+
+            return response()->json([
+                'success' => $response->successful(),
+                'status' => $response->status()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Proxy interrupt error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Proxy object info requests
+     */
+    // public function proxyObjectInfo(Request $request)
+    // {
+    //     try {
+    //         $response = Http::timeout(10)->get($this->comfyUrl . '/object_info');
+
+    //         if ($response->failed()) {
+    //             return response()->json(['error' => 'Failed to fetch object info'], 500);
+    //         }
+
+    //         return response()->json($response->json());
+    //     } catch (\Exception $e) {
+    //         Log::error('Proxy object info error: ' . $e->getMessage());
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+    public function proxyObjectInfo(Request $request)
+{
+    try {
+        $response = Http::timeout(10)->get($this->comfyUrl . '/object_info');
+        if ($response->failed()) return response()->json(['error' => 'Offline'], 500);
+
+        $data = $response->json();
+        
+        // Extract Checkpoints
+        $checkpoints = $data['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0] ?? [];
+        
+        // Extract ControlNets
+        $controlnets = $data['ControlNetLoader']['input']['required']['control_net_name'][0] ?? [];
+
+        return response()->json([
+            'checkpoints' => $checkpoints,
+            'controlnets' => $controlnets,
+            'raw' => $data // Keep for debugging
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+    /**
+     * Proxy queue requests
+     */
+    public function proxyQueue(Request $request)
+    {
+        try {
+            $response = Http::timeout(10)->get($this->comfyUrl . '/queue');
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Failed to fetch queue'], 500);
+            }
+
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            Log::error('Proxy queue error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Debug / utility methods
+    // ----------------------------------------------------------------------
+
+    public function health() {
+    try {
+        $response = Http::timeout(3)->get($this->comfyUrl . "/system_stats");
+        if ($response->successful()) {
+            $data = $response->json();
+            $gpu = $data['devices'][0];
+            
+            return response()->json([
+                'success' => true,
+                'status' => 'online',
+                'gpu_name' => $gpu['name'],
+                'vram_total' => $gpu['vram_total'],
+                'vram_free' => $gpu['vram_free'],
+            ]);
+        }
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
+
+    public function debugModels()
+    {
+        try {
+            $response = Http::timeout(10)->get($this->comfyUrl . '/object_info');
+            if ($response->successful()) {
+                $nodes = $response->json();
+                $modelNodes = array_filter(array_keys($nodes), function($key) {
+                    return strpos($key, 'Checkpoint') !== false ||
+                           strpos($key, 'Model') !== false;
+                });
+                return response()->json(['models' => array_values($modelNodes)]);
+            }
+            return response()->json(['error' => 'Failed to fetch models'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function recentImages()
+    {
+        try {
+            $response = Http::get($this->comfyUrl . '/history');
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function debugPermissions()
+    {
+        $inputDir = env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input');
+        return response()->json([
+            'input_dir_exists' => file_exists($inputDir),
+            'input_dir_writable' => is_writable($inputDir),
+            'input_dir' => $inputDir
+        ]);
+    }
+}
