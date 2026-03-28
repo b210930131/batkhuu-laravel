@@ -1,4 +1,4 @@
-<div class="card" id="controlnet-main-container">
+<div class="card" id="controlnet-main-container" style="max-height: 400px;">
     <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
         <span>🎮 ControlNet Preprocessors</span>
         <div id="controlnetDot" style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; transition: background 0.3s;"></div>
@@ -48,18 +48,18 @@
 
 <script>
     // 1. Define preprocessors
-    const preprocessors = [
-        { id: 'canny', name: 'Canny', icon: '🔲' },
-        { id: 'depth', name: 'Depth', icon: '🗺️' },
-        { id: 'openpose', name: 'Pose', icon: '🧍' },
-        { id: 'scribble', name: 'Sketch', icon: '✏️' },
-        { id: 'mlsd', name: 'MLSD', icon: '📐' },
-        { id: 'hed', name: 'SoftEdge', icon: '🎨' },
-        { id: 'seg', name: 'Seg', icon: '🏞️' },
-        { id: 'normal', name: 'Normal', icon: '⚡' }
-    ];
+    // const preprocessors = [
+    //     { id: 'canny', name: 'Canny', icon: '🔲' },
+    //     { id: 'depth', name: 'Depth', icon: '🗺️' },
+    //     { id: 'openpose', name: 'Pose', icon: '🧍' },
+    //     { id: 'scribble', name: 'Sketch', icon: '✏️' },
+    //     { id: 'mlsd', name: 'MLSD', icon: '📐' },
+    //     { id: 'hed', name: 'SoftEdge', icon: '🎨' },
+    //     { id: 'seg', name: 'Seg', icon: '🏞️' },
+    //     { id: 'normal', name: 'Normal', icon: '⚡' }
+    // ];
 
-    window.selectedPreprocessor = 'canny';
+    // window.selectedPreprocessor = 'canny';
 
     // // 2. Build Grid
     // const grid = document.getElementById('preprocessorList');
@@ -109,21 +109,71 @@
 </script>
 
 <style>
+    /* Base styles */
     .preprocessor-btn {
-        background: white;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #334155;
+        text-align: center;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
     }
+    
+    /* Active state */
     .preprocessor-btn.active {
-        background: #6366f1 !important;
-        color: white !important;
-        border-color: #4f46e5 !important;
-        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        border-color: #4f46e5;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        transform: scale(0.98);
     }
+    
+    /* Hover effect */
     .preprocessor-btn:hover:not(.active) {
-        background: #f8fafc;
+        background: linear-gradient(135deg, #f1f5f9 0%, #eef2ff 100%);
         border-color: #cbd5e1;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     }
-</style>
+    
+    /* Active click effect */
+    .preprocessor-btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s;
+    }
+    
+    /* Ripple effect */
+    .preprocessor-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        transform: translate(-50%, -50%);
+        transition: width 0.3s, height 0.3s;
+    }
+    
+    .preprocessor-btn:active::after {
+        width: 100px;
+        height: 100px;
+        opacity: 0;
+        transition: 0s;
+    }
+    
+    /* Disabled state */
+    .preprocessor-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+</style>>
