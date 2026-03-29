@@ -27,6 +27,7 @@ class ComfyUIController extends Controller
             $validated = $request->validate([
                 'client_id' => 'nullable|string',
                 'model' => 'required|string',
+                'refiner_model' => 'nullable|string',  // SDXL refiner
                 'positive_prompt' => 'required|string',
                 'negative_prompt' => 'nullable|string',
                 'steps' => 'integer|min:1|max:100',
@@ -34,6 +35,7 @@ class ComfyUIController extends Controller
                 'width' => 'integer|min:256|max:1536',
                 'height' => 'integer|min:256|max:1536',
                 'sampler' => 'string',
+                'scheduler' => 'nullable|string',
                 'controlnet' => 'nullable|array',
                 'controlnet.enabled' => 'boolean',
                 'controlnet.preprocessor' => 'nullable|string',
@@ -41,7 +43,6 @@ class ComfyUIController extends Controller
                 'controlnet.strength' => 'nullable|numeric',
                 'controlnet.start_percent' => 'nullable|numeric',
                 'controlnet.end_percent' => 'nullable|numeric',
-                // Preprocessor specific parameters
                 'controlnet.canny_low' => 'nullable|integer',
                 'controlnet.canny_high' => 'nullable|integer',
                 'controlnet.depth_resolution' => 'nullable|integer',
@@ -59,10 +60,13 @@ class ComfyUIController extends Controller
 
             $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
 
+            // Check if SDXL model
+            $isSDXL = $this->isSDXLModel($validated['model']);
+            
             if (!empty($validated['controlnet']['enabled']) && !empty($validated['controlnet']['image_base64'])) {
-                $workflow = $this->buildControlNetWorkflow($validated);
+                $workflow = $this->buildControlNetWorkflow($validated, $isSDXL);
             } else {
-                $workflow = $this->buildBaseWorkflow($validated);
+                $workflow = $this->buildBaseWorkflow($validated, $isSDXL);
             }
 
             $response = Http::timeout(180)->post($this->comfyUrl . '/prompt', [
@@ -85,9 +89,27 @@ class ComfyUIController extends Controller
         }
     }
 
-    protected function buildBaseWorkflow(array $p)
+    protected function isSDXLModel($modelName)
     {
-        return [
+        return str_contains(strtolower($modelName), 'sdxl') || 
+               str_contains(strtolower($modelName), 'xl') ||
+               $modelName === 'sd_xl_base_1.0.safetensors';
+    }
+
+    protected function isFluxModel($modelName)
+    {
+        return str_contains(strtolower($modelName), 'flux');
+    }
+
+    protected function buildBaseWorkflow(array $p, $isSDXL = false)
+    {
+        // SDXL + Refiner
+        if ($isSDXL && !empty($p['refiner_model'])) {
+            return $this->buildSDXLRefinerWorkflow($p);
+        }
+        
+        // Base workflow
+        $workflow = [
             "4" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
             "5" => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
             "6" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
@@ -99,7 +121,7 @@ class ComfyUIController extends Controller
                     "steps" => $p['steps'], 
                     "cfg" => $p['cfg'],
                     "sampler_name" => $p['sampler'], 
-                    "scheduler" => "karras", 
+                    "scheduler" => $p['scheduler'] ?? "karras", 
                     "denoise" => 1,
                     "model" => ["4", 0], 
                     "positive" => ["6", 0], 
@@ -110,22 +132,74 @@ class ComfyUIController extends Controller
             "8" => ["class_type" => "VAEDecode", "inputs" => ["samples" => ["3", 0], "vae" => ["4", 2]]],
             "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "Latent_", "images" => ["8", 0]]]
         ];
+        
+        return $workflow;
     }
 
-    protected function buildControlNetWorkflow(array $p)
+    protected function buildSDXLRefinerWorkflow(array $p)
+    {
+        $totalSteps = (int)$p['steps'];
+        $refinerSteps = (int)($p['refiner_steps'] ?? round($totalSteps * 0.3));
+        $baseSteps = $totalSteps - $refinerSteps;
+        
+        $workflow = [
+            "4" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
+            "14" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['refiner_model']]],
+            "5" => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
+            "6" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
+            "7" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["4", 1]]],
+            "16" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["14", 1]]],
+            "17" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["14", 1]]],
+            "3" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => rand(1, 999999999), 
+                    "steps" => $baseSteps, 
+                    "cfg" => $p['cfg'],
+                    "sampler_name" => $p['sampler'], 
+                    "scheduler" => $p['scheduler'] ?? "karras", 
+                    "denoise" => 1,
+                    "model" => ["4", 0], 
+                    "positive" => ["6", 0], 
+                    "negative" => ["7", 0], 
+                    "latent_image" => ["5", 0]
+                ]
+            ],
+            "15" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => rand(1, 999999999), 
+                    "steps" => $refinerSteps, 
+                    "cfg" => $p['cfg'],
+                    "sampler_name" => $p['sampler'], 
+                    "scheduler" => $p['scheduler'] ?? "karras", 
+                    "denoise" => 1,
+                    "model" => ["14", 0], 
+                    "positive" => ["16", 0], 
+                    "negative" => ["17", 0], 
+                    "latent_image" => ["3", 0]
+                ]
+            ],
+            "8" => ["class_type" => "VAEDecode", "inputs" => ["samples" => ["15", 0], "vae" => ["14", 2]]],
+            "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "SDXL_Refined_", "images" => ["8", 0]]]
+        ];
+        
+        return $workflow;
+    }
+
+    protected function buildControlNetWorkflow(array $p, $isSDXL = false)
     {
         $cn = $p['controlnet'];
         $filename = $this->saveBase64Image($cn['image_base64']);
         $preprocessor = $cn['preprocessor'] ?? 'canny';
         
-        // Get preprocessor node with parameters
         $preNode = $this->getPreprocessorNode($preprocessor, "10", $cn);
         
         $workflow = [
             "4"  => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
             "10" => ["class_type" => "LoadImage", "inputs" => ["image" => $filename]],
             "11" => $preNode,
-            "12" => ["class_type" => "ControlNetLoader", "inputs" => ["control_net_name" => $this->getControlNetModel($preprocessor)]],
+            "12" => ["class_type" => "ControlNetLoader", "inputs" => ["control_net_name" => $this->getControlNetModel($preprocessor, $isSDXL)]],
             "5"  => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
             "6"  => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
             "7"  => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["4", 1]]],
@@ -134,7 +208,7 @@ class ComfyUIController extends Controller
                 "inputs" => [
                     "strength" => (float)($cn['strength'] ?? 0.85), 
                     "start_percent" => (float)($cn['start_percent'] ?? 0.0), 
-                    "end_percent" => (float)($cn['end_percent'] ?? 1.0),
+                    "end_percent" => (float)($cn['end_percent'] ?? 0.7),
                     "conditioning" => ["6", 0], 
                     "control_net" => ["12", 0], 
                     "image" => ["11", 0]
@@ -147,7 +221,7 @@ class ComfyUIController extends Controller
                     "steps" => $p['steps'], 
                     "cfg" => $p['cfg'],
                     "sampler_name" => $p['sampler'], 
-                    "scheduler" => "karras", 
+                    "scheduler" => $p['scheduler'] ?? "karras", 
                     "denoise" => 1,
                     "model" => ["4", 0], 
                     "positive" => ["13", 0], 
@@ -159,12 +233,44 @@ class ComfyUIController extends Controller
             "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "ControlNet_", "images" => ["8", 0]]]
         ];
         
+        // Add refiner for SDXL
+        if ($isSDXL && !empty($p['refiner_model'])) {
+            $workflow = $this->addRefinerToControlNet($workflow, $p);
+        }
+        
         return $workflow;
     }
 
-    /**
-     * Get preprocessor node with dynamic parameters from frontend
-     */
+    protected function addRefinerToControlNet($workflow, $p)
+    {
+        $totalSteps = (int)$p['steps'];
+        $refinerSteps = (int)($p['refiner_steps'] ?? round($totalSteps * 0.3));
+        
+        $workflow["14"] = ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['refiner_model']]];
+        $workflow["16"] = ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["14", 1]]];
+        $workflow["17"] = ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["14", 1]]];
+        
+        $workflow["15"] = [
+            "class_type" => "KSampler",
+            "inputs" => [
+                "seed" => rand(1, 999999999), 
+                "steps" => $totalSteps, 
+                "cfg" => $p['cfg'],
+                "sampler_name" => $p['sampler'], 
+                "scheduler" => $p['scheduler'] ?? "karras", 
+                "denoise" => 1,
+                "model" => ["14", 0], 
+                "positive" => ["16", 0], 
+                "negative" => ["17", 0], 
+                "latent_image" => ["3", 0]
+            ]
+        ];
+        
+        $workflow["8"] = ["class_type" => "VAEDecode", "inputs" => ["samples" => ["15", 0], "vae" => ["14", 2]]];
+        
+        return $workflow;
+    }
+
     protected function getPreprocessorNode($type, $imgNode, $params = [])
     {
         $nodes = [
@@ -234,8 +340,18 @@ class ComfyUIController extends Controller
         return $nodes[$type] ?? $nodes['canny'];
     }
 
-    protected function getControlNetModel($type)
+    protected function getControlNetModel($type, $isSDXL = false)
     {
+        if ($isSDXL) {
+            $models = [
+                'canny'    => 'control-lora-canny-rank256.safetensors',
+                'depth'    => 'control-lora-depth-rank256.safetensors',
+                'openpose' => 'control-lora-openposeXL2-rank256.safetensors',
+                'scribble' => 'control-lora-scribble-rank256.safetensors',
+            ];
+            return $models[$type] ?? 'control-lora-canny-rank256.safetensors';
+        }
+        
         $models = [
             'canny'    => 'control_sd15_canny.pth',
             'depth'    => 'control_sd15_depth.pth',
@@ -267,7 +383,6 @@ class ComfyUIController extends Controller
         return $filename;
     }
 
-    // Proxy methods
     public function proxyObjectInfo()
     {
         $data = Http::get($this->comfyUrl . '/object_info')->json();
