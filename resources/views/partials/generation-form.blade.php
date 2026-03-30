@@ -348,21 +348,29 @@
                 <div class="control-group">
                     <label>🎭 Model Selection</label>
                     <select id="model">
-                        <option value="dreamshaper_8.safetensors" selected>✨ Dreamshaper 8 (SD1.5, artistic, ControlNet ready)</option>
-                        <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5, FP16, low VRAM)</option>
-                        <option value="v1-5-pruned.safetensors">📦 v1-5-pruned (SD1.5, standard)</option>
-                        <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5, photorealistic)</option>
-                        <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (high quality, 1024x1024)</option>
-                        <option value="sd_xl_refiner_1.0.safetensors">🔧 SDXL Refiner 1.0 (detail enhancement)</option>
-                        <option value="flux1-dev-fp8.safetensors">⚡ Flux Dev FP8 (experimental, high VRAM)</option>
-                        <option value="sd3.5_large_fp8_scaled.safetensors">🌀 SD3.5 Large FP8 (requires >8GB VRAM)</option>
-                        <option value="qwen_image_2512_fp8_e4m3fn.safetensors">🖼️ Qwen Image 2.5 (experimental)</option>
-                    </select>
+    <option value="dreamshaper_8.safetensors">✨ Dreamshaper 8 (SD1.5)</option>
+    <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5)</option>
+    <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5)</option>
+    <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (1024x1024 recommended)</option>
+    <option value="sd_xl_base_1.0_fp16.safetensors">🎨 SDXL Base 1.0 FP16 (lower VRAM)</option>
+</select>
                     <div id="vram-warning" class="vram-warning" style="display:none;">
                         ⚠️ Warning: Selected model may exceed 8GB VRAM when using ControlNet. Consider using an SD1.5 model.
                     </div>
                 </div>
-                
+                <div class="control-group" id="refinerGroup" style="display: none;">
+    <label>🔧 SDXL Refiner Model</label>
+    <select id="refiner_model">
+        <option value="sd_xl_refiner_1.0.safetensors">SDXL Refiner 1.0</option>
+        <option value="sd_xl_refiner_1.0_fp16.safetensors">SDXL Refiner 1.0 (FP16)</option>
+    </select>
+    <div style="margin-top: 8px;">
+        <label>✨ Refiner Steps</label>
+        <input type="number" id="refiner_steps" value="15" min="1" max="100">
+        <small style="display: block; margin-top: 4px; color: #6b7280;">Refiner adds details after base generation (typically 10-20 steps)</small>
+    </div>
+    <div id="resolutionHint" style="margin-top: 8px; padding: 8px; background: #e0e7ff; border-radius: 6px; font-size: 12px; display: none;"></div>
+</div>
                 <div class="control-group">
                     <label>✨ Positive Prompt</label>
                     <textarea id="positive_prompt" rows="3">masterpiece, architectural photography, modern building exterior, (golden hour lighting:1.1), luxury facade, glass and concrete materials, realistic landscape, high-quality rendering, V-Ray style, Unreal Engine 5 render, sharp focus, volumetric lighting, hyper-detailed environment, realistic sky.</textarea>
@@ -570,25 +578,453 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('ComfyUI ControlNet Studio initialized');
+// ========== GLOBAL VARIABLES ==========
+let currentPreprocessor = 'canny';
+let currentControlImage = null;
+let isGenerating = false;
+
+// ========== HELPER FUNCTIONS (Defined First) ==========
+
+function getPreprocessorName(id) {
+    const names = {
+        'canny': 'Canny Edge Detection',
+        'depth': 'Depth Map',
+        'openpose': 'OpenPose',
+        'mlsd': 'MLSD Line Detection',
+        'scribble': 'Scribble',
+        'hed': 'HED Edge Detection',
+        'seg': 'Segmentation',
+        'normal': 'Normal Map'
+    };
+    return names[id] || id;
+}
+
+function updateControlNetStatus() {
+    const dot = document.getElementById('controlnetDot');
+    const text = document.getElementById('controlnetText');
+    const details = document.getElementById('controlnetDetails');
+    const controlImageInput = document.getElementById('controlImageInput');
+    
+    const hasControlImage = controlImageInput && controlImageInput.files && controlImageInput.files.length > 0;
+    
+    if (dot && text && details) {
+        if (hasControlImage) {
+            dot.style.backgroundColor = '#10b981';
+            text.textContent = `✅ ControlNet Active • Preprocessor: ${getPreprocessorName(currentPreprocessor)}`;
+            details.innerHTML = `Using ${getPreprocessorName(currentPreprocessor)} preprocessor with custom settings. ControlNet will guide the generation.`;
+        } else {
+            dot.style.backgroundColor = '#ef4444';
+            text.textContent = '⏸️ ControlNet Inactive';
+            details.innerHTML = 'Upload a control image to enable ControlNet guidance.';
+        }
+    }
+}
+
+function updateResolutionHint(width, height) {
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
+    const hintDiv = document.getElementById('resolutionHint');
+    
+    if (widthInput && heightInput) {
+        widthInput.value = width;
+        heightInput.value = height;
+    }
+    
+    if (hintDiv) {
+        hintDiv.innerHTML = `💡 Recommended resolution: ${width}x${height}`;
+        hintDiv.style.display = 'block';
+        setTimeout(() => {
+            hintDiv.style.display = 'none';
+        }, 3000);
+    }
+}
+
+function setupSDXLSupport() {
+    const modelSelect = document.getElementById('model');
+    const refinerSelect = document.getElementById('refiner_model');
+    const refinerStepsInput = document.getElementById('refiner_steps');
+    const refinerGroup = document.getElementById('refinerGroup');
+    
+    if (modelSelect && refinerGroup) {
+        modelSelect.addEventListener('change', () => {
+            const selectedModel = modelSelect.value.toLowerCase();
+            const isSDXL = selectedModel.includes('sdxl');
+            
+            if (isSDXL) {
+                refinerGroup.style.display = 'block';
+                
+                // Auto-select refiner if available
+                if (refinerSelect && refinerSelect.options.length > 0) {
+                    let hasRefiner = false;
+                    for (let i = 0; i < refinerSelect.options.length; i++) {
+                        if (refinerSelect.options[i].value.toLowerCase().includes('refiner')) {
+                            refinerSelect.value = refinerSelect.options[i].value;
+                            hasRefiner = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasRefiner) {
+                        const option = document.createElement('option');
+                        option.value = 'sd_xl_refiner_1.0.safetensors';
+                        option.text = '🔧 SDXL Refiner 1.0';
+                        refinerSelect.appendChild(option);
+                        refinerSelect.value = 'sd_xl_refiner_1.0.safetensors';
+                    }
+                }
+                
+                // Set default steps for SDXL
+                const stepsInput = document.getElementById('steps');
+                if (stepsInput && stepsInput.value === '20') {
+                    stepsInput.value = '30';
+                }
+                
+                // Set default refiner steps
+                if (refinerStepsInput && refinerStepsInput.value === '') {
+                    refinerStepsInput.value = '15';
+                }
+                
+                // Show SDXL resolution hint
+                updateResolutionHint(1024, 1024);
+            } else {
+                refinerGroup.style.display = 'none';
+                updateResolutionHint(512, 512);
+            }
+        });
         
-        // ========== Preprocessor List ==========
-        const preprocessors = [
-            { id: 'canny', name: '🔲 Canny Edge', icon: '🔲' },
-            { id: 'depth', name: '🗺️ Depth Map', icon: '🗺️' },
-            { id: 'openpose', name: '🧍 OpenPose', icon: '🧍' },
-            { id: 'mlsd', name: '📐 MLSD', icon: '📐' },
-            { id: 'scribble', name: '✏️ Scribble', icon: '✏️' },
-            { id: 'hed', name: '🎨 HED', icon: '🎨' },
-            { id: 'seg', name: '🏷️ SEG', icon: '🏷️' },
-            { id: 'normal', name: '📐 Normal Map', icon: '📐' }
-        ];
+        // Trigger initial check
+        modelSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+async function refreshGallery() {
+    const galleryDiv = document.getElementById('images');
+    if (!galleryDiv) return;
+    
+    try {
+        galleryDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px;">🔄 Loading images...</div>';
         
-        const preprocessorList = document.getElementById('preprocessorList');
-        let currentPreprocessor = 'canny';
+        const response = await fetch('/api/comfyui/history');
+        const data = await response.json();
+        const images = [];
         
-        // Create preprocessor buttons
+        Object.values(data).forEach(prompt => {
+            if (prompt.outputs) {
+                Object.values(prompt.outputs).forEach(output => {
+                    if (output.images) {
+                        output.images.forEach(img => {
+                            images.push(img);
+                        });
+                    }
+                });
+            }
+        });
+        
+        images.reverse();
+        
+        if (images.length === 0) {
+            galleryDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #9ca3af;">🎨 No images yet<br><small>Your generated images will appear here</small></div>';
+            return;
+        }
+        
+        galleryDiv.innerHTML = images.map(img => `
+            <div class="image-card" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px;">
+                <img src="/api/comfyui/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${img.type}" 
+                     style="width: 100%; height: auto; cursor: pointer;"
+                     onclick="window.open(this.src, '_blank')"
+                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%23ccc\'/%3E%3Ctext x=\'100\' y=\'100\' text-anchor=\'middle\' fill=\'%23999\'%3EError%3C/text%3E%3C/svg%3E'">
+                <div class="image-actions" style="padding: 12px; text-align: center;">
+                    <button class="download-btn" onclick="event.stopPropagation(); downloadImage('${img.filename}', '${img.subfolder || ''}', '${img.type}')" 
+                            style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                        📥 Download
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Gallery error:', error);
+        galleryDiv.innerHTML = `<div style="text-align: center; padding: 60px 20px; color: #ef4444;">❌ Error loading gallery: ${error.message}</div>`;
+    }
+}
+
+async function downloadImage(filename, subfolder, type) {
+    try {
+        const url = `/api/comfyui/view?filename=${encodeURIComponent(filename)}&subfolder=${encodeURIComponent(subfolder)}&type=${type}`;
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    } catch (error) {
+        console.error('Download error:', error);
+        alert('Failed to download image');
+    }
+}
+
+async function interruptGeneration() {
+    try {
+        await fetch('/api/comfyui/interrupt', { method: 'POST' });
+        const statusDiv = document.getElementById('status');
+        if (statusDiv) {
+            statusDiv.innerHTML = '⏹️ Generation interrupted';
+            statusDiv.style.background = '#fff3cd';
+            statusDiv.style.color = '#856404';
+            setTimeout(() => {
+                statusDiv.innerHTML = '✅ Ready • ControlNet ready';
+                statusDiv.style.background = '#f0fdf4';
+                statusDiv.style.color = '#166534';
+            }, 2000);
+        }
+        isGenerating = false;
+        const btn = document.getElementById('generateBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Generate Image';
+        }
+    } catch (error) {
+        console.error('Interrupt error:', error);
+    }
+}
+
+async function pollForResults(promptId) {
+    let attempts = 0;
+    const maxAttempts = 60;
+    
+    const interval = setInterval(async () => {
+        attempts++;
+        
+        try {
+            const response = await fetch('/api/comfyui/history');
+            const history = await response.json();
+            
+            if (history[promptId]) {
+                clearInterval(interval);
+                await refreshGallery();
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '✅ Generation complete! Image added to gallery.';
+                    statusDiv.style.background = '#d4edda';
+                    statusDiv.style.color = '#155724';
+                    
+                    setTimeout(() => {
+                        statusDiv.innerHTML = '✅ Ready • ControlNet ready';
+                        statusDiv.style.background = '#f0fdf4';
+                        statusDiv.style.color = '#166534';
+                    }, 3000);
+                }
+                isGenerating = false;
+                const btn = document.getElementById('generateBtn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Generate Image';
+                }
+            }
+            
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '⏱️ Generation timeout. Please check gallery manually.';
+                    statusDiv.style.background = '#fff3cd';
+                    statusDiv.style.color = '#856404';
+                }
+                isGenerating = false;
+                const btn = document.getElementById('generateBtn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Generate Image';
+                }
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 2000);
+}
+
+async function generate() {
+    if (isGenerating) {
+        alert('Generation already in progress. Please wait.');
+        return;
+    }
+    
+    isGenerating = true;
+    const btn = document.getElementById('generateBtn');
+    const statusDiv = document.getElementById('status');
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '🎨 Processing...';
+    }
+    
+    if (statusDiv) {
+        statusDiv.innerHTML = '⏳ Initializing generation...';
+        statusDiv.style.background = '#fff3cd';
+        statusDiv.style.color = '#856404';
+    }
+    
+    const selectedModel = document.getElementById('model').value;
+    const isSDXL = selectedModel.toLowerCase().includes('sdxl');
+    const controlImageInput = document.getElementById('controlImageInput');
+    const hasControlImage = controlImageInput && controlImageInput.files && controlImageInput.files.length > 0;
+    
+    // Get control image base64 if exists
+    let controlImageBase64 = null;
+    if (hasControlImage) {
+        const file = controlImageInput.files[0];
+        controlImageBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    const payload = {
+        client_id: 'client_' + Date.now(),
+        model: selectedModel,
+        positive_prompt: document.getElementById('positive_prompt').value,
+        negative_prompt: document.getElementById('negative_prompt').value,
+        steps: parseInt(document.getElementById('steps').value),
+        cfg: parseFloat(document.getElementById('cfg').value),
+        width: parseInt(document.getElementById('width').value),
+        height: parseInt(document.getElementById('height').value),
+        sampler: document.getElementById('sampler').value,
+        refiner_model: isSDXL ? document.getElementById('refiner_model')?.value : null,
+        refiner_steps: isSDXL ? parseInt(document.getElementById('refiner_steps')?.value || 15) : null,
+        controlnet: hasControlImage && controlImageBase64 ? {
+            enabled: true,
+            preprocessor: currentPreprocessor,
+            image_base64: controlImageBase64,
+            strength: parseFloat(document.getElementById('cnStrength')?.value || 0.85),
+            start_percent: parseFloat(document.getElementById('cnStart')?.value || 0),
+            end_percent: parseFloat(document.getElementById('cnEnd')?.value || 1)
+        } : null
+    };
+    
+    // Add preprocessor-specific settings
+    if (payload.controlnet) {
+        switch(currentPreprocessor) {
+            case 'canny':
+                payload.controlnet.canny_low = parseInt(document.getElementById('cannyLowThreshold')?.value || 50);
+                payload.controlnet.canny_high = parseInt(document.getElementById('cannyHighThreshold')?.value || 150);
+                break;
+            case 'depth':
+                payload.controlnet.depth_resolution = parseInt(document.getElementById('depthResolution')?.value || 512);
+                break;
+            case 'openpose':
+                payload.controlnet.openpose_hands = document.getElementById('openposeHands')?.checked ? 'enable' : 'disable';
+                payload.controlnet.openpose_body = document.getElementById('openposeBody')?.checked ? 'enable' : 'disable';
+                payload.controlnet.openpose_face = document.getElementById('openposeFace')?.checked ? 'enable' : 'disable';
+                break;
+            case 'mlsd':
+                payload.controlnet.mlsd_score_thr = parseFloat(document.getElementById('mlsdScoreThr')?.value || 0.1);
+                payload.controlnet.mlsd_dist_thr = parseFloat(document.getElementById('mlsdDistThr')?.value || 0.1);
+                payload.controlnet.mlsd_resolution = parseInt(document.getElementById('mlsdResolution')?.value || 512);
+                break;
+            case 'scribble':
+                payload.controlnet.scribble_mode = document.getElementById('scribbleMode')?.value || 'hed';
+                break;
+            case 'hed':
+                payload.controlnet.hed_resolution = parseInt(document.getElementById('hedResolution')?.value || 512);
+                break;
+            case 'seg':
+                payload.controlnet.seg_resolution = parseInt(document.getElementById('segResolution')?.value || 512);
+                break;
+            case 'normal':
+                payload.controlnet.normal_resolution = parseInt(document.getElementById('normalResolution')?.value || 512);
+                break;
+        }
+    }
+    
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (statusDiv) {
+                statusDiv.innerHTML = '✅ Generation started! Processing...';
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.color = '#155724';
+            }
+            pollForResults(data.prompt_id);
+        } else {
+            throw new Error(data.error || 'Generation failed');
+        }
+    } catch (error) {
+        console.error('Generation error:', error);
+        if (statusDiv) {
+            statusDiv.innerHTML = `❌ Error: ${error.message}`;
+            statusDiv.style.background = '#f8d7da';
+            statusDiv.style.color = '#721c24';
+        }
+        isGenerating = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Generate Image';
+        }
+    }
+}
+
+function switchPreprocessor(preprocessorId) {
+    console.log('Switching to preprocessor:', preprocessorId);
+    currentPreprocessor = preprocessorId;
+    
+    // Update button active states
+    document.querySelectorAll('.preprocessor-btn').forEach(btn => {
+        if (btn.getAttribute('data-preprocessor') === preprocessorId) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Hide all settings panels
+    document.querySelectorAll('.preprocessor-settings').forEach(settings => {
+        settings.classList.remove('active');
+        settings.style.display = 'none';
+    });
+    
+    // Show selected settings panel
+    const selectedSettings = document.getElementById(`${preprocessorId}Settings`);
+    if (selectedSettings) {
+        selectedSettings.classList.add('active');
+        selectedSettings.style.display = 'block';
+        console.log(`Showing ${preprocessorId} settings`);
+    }
+    
+    // Update status
+    updateControlNetStatus();
+}
+
+// ========== MAIN INITIALIZATION ==========
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('ComfyUI ControlNet Studio initialized');
+    
+    // ========== Preprocessor List ==========
+    const preprocessors = [
+        { id: 'canny', name: '🔲 Canny Edge', icon: '🔲' },
+        { id: 'depth', name: '🗺️ Depth Map', icon: '🗺️' },
+        { id: 'openpose', name: '🧍 OpenPose', icon: '🧍' },
+        { id: 'mlsd', name: '📐 MLSD', icon: '📐' },
+        { id: 'scribble', name: '✏️ Scribble', icon: '✏️' },
+        { id: 'hed', name: '🎨 HED', icon: '🎨' },
+        { id: 'seg', name: '🏷️ SEG', icon: '🏷️' },
+        { id: 'normal', name: '📐 Normal Map', icon: '📐' }
+    ];
+    
+    const preprocessorList = document.getElementById('preprocessorList');
+    if (preprocessorList) {
         preprocessors.forEach(pp => {
             const btn = document.createElement('button');
             btn.className = 'preprocessor-btn' + (pp.id === currentPreprocessor ? ' active' : '');
@@ -597,238 +1033,131 @@
             btn.onclick = () => switchPreprocessor(pp.id);
             preprocessorList.appendChild(btn);
         });
-        
-        // Function to switch preprocessor
-        function switchPreprocessor(preprocessorId) {
-            console.log('Switching to preprocessor:', preprocessorId);
-            currentPreprocessor = preprocessorId;
-            
-            // Update button active states
-            document.querySelectorAll('.preprocessor-btn').forEach(btn => {
-                if (btn.getAttribute('data-preprocessor') === preprocessorId) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            
-            // Hide all settings panels
-            document.querySelectorAll('.preprocessor-settings').forEach(settings => {
-                settings.classList.remove('active');
-                settings.style.display = 'none';
-            });
-            
-            // Show selected settings panel
-            const selectedSettings = document.getElementById(`${preprocessorId}Settings`);
-            if (selectedSettings) {
-                selectedSettings.classList.add('active');
-                selectedSettings.style.display = 'block';
-                console.log(`Showing ${preprocessorId} settings`);
-            } else {
-                console.log(`No settings panel found for ${preprocessorId}`);
-            }
-            
-            // Update status
-            updateControlNetStatus();
-        }
-        
-        // ========== Canny Slider Updates ==========
-        const lowSlider = document.getElementById('cannyLowThreshold');
-        const highSlider = document.getElementById('cannyHighThreshold');
-        const lowVal = document.getElementById('cannyLowVal');
-        const highVal = document.getElementById('cannyHighVal');
-        
-        if (lowSlider) {
-            lowSlider.addEventListener('input', function() {
-                lowVal.textContent = this.value;
-                console.log(`Canny Low Threshold: ${this.value}`);
-            });
-        }
-        
-        if (highSlider) {
-            highSlider.addEventListener('input', function() {
-                highVal.textContent = this.value;
-                console.log(`Canny High Threshold: ${this.value}`);
-            });
-        }
-        
-        // ========== MLSD Slider Updates ==========
-        const mlsdScore = document.getElementById('mlsdScoreThr');
-        const mlsdDist = document.getElementById('mlsdDistThr');
-        const mlsdScoreVal = document.getElementById('mlsdScoreVal');
-        const mlsdDistVal = document.getElementById('mlsdDistVal');
-        
-        if (mlsdScore) {
-            mlsdScore.addEventListener('input', function() {
-                mlsdScoreVal.textContent = this.value;
-            });
-        }
-        
-        if (mlsdDist) {
-            mlsdDist.addEventListener('input', function() {
-                mlsdDistVal.textContent = this.value;
-            });
-        }
-        
-        // ========== Control Image Preview ==========
-        const controlImageInput = document.getElementById('controlImageInput');
-        const controlPreview = document.getElementById('controlPreview');
-        
-        if (controlImageInput) {
-            controlImageInput.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+    }
+    
+    // ========== Setup SDXL Support ==========
+    setupSDXLSupport();
+    
+    // ========== Setup Sliders ==========
+    // Canny sliders
+    const lowSlider = document.getElementById('cannyLowThreshold');
+    const highSlider = document.getElementById('cannyHighThreshold');
+    const lowVal = document.getElementById('cannyLowVal');
+    const highVal = document.getElementById('cannyHighVal');
+    
+    if (lowSlider && lowVal) {
+        lowSlider.addEventListener('input', function() {
+            lowVal.textContent = this.value;
+        });
+    }
+    
+    if (highSlider && highVal) {
+        highSlider.addEventListener('input', function() {
+            highVal.textContent = this.value;
+        });
+    }
+    
+    // MLSD sliders
+    const mlsdScore = document.getElementById('mlsdScoreThr');
+    const mlsdDist = document.getElementById('mlsdDistThr');
+    const mlsdScoreVal = document.getElementById('mlsdScoreVal');
+    const mlsdDistVal = document.getElementById('mlsdDistVal');
+    
+    if (mlsdScore && mlsdScoreVal) {
+        mlsdScore.addEventListener('input', function() {
+            mlsdScoreVal.textContent = this.value;
+        });
+    }
+    
+    if (mlsdDist && mlsdDistVal) {
+        mlsdDist.addEventListener('input', function() {
+            mlsdDistVal.textContent = this.value;
+        });
+    }
+    
+    // ControlNet strength sliders
+    const strengthSlider = document.getElementById('cnStrength');
+    const strengthVal = document.getElementById('strengthVal');
+    if (strengthSlider && strengthVal) {
+        strengthSlider.addEventListener('input', function() {
+            strengthVal.textContent = this.value;
+        });
+    }
+    
+    const startSlider = document.getElementById('cnStart');
+    const startVal = document.getElementById('startVal');
+    if (startSlider && startVal) {
+        startSlider.addEventListener('input', function() {
+            startVal.textContent = parseFloat(this.value).toFixed(2);
+        });
+    }
+    
+    const endSlider = document.getElementById('cnEnd');
+    const endVal = document.getElementById('endVal');
+    if (endSlider && endVal) {
+        endSlider.addEventListener('input', function() {
+            endVal.textContent = parseFloat(this.value).toFixed(2);
+        });
+    }
+    
+    // ========== Control Image Preview ==========
+    const controlImageInput = document.getElementById('controlImageInput');
+    const controlPreview = document.getElementById('controlPreview');
+    
+    if (controlImageInput) {
+        controlImageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (controlPreview) {
                         controlPreview.innerHTML = `<img src="${e.target.result}" alt="Control Image" style="max-width: 100%; border-radius: 8px;">`;
-                        updateControlNetStatus(true);
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    controlPreview.innerHTML = '';
-                    updateControlNetStatus(false);
-                }
-            });
-        }
-        
-        // ========== ControlNet Status Update ==========
-        function updateControlNetStatus(hasImage = null) {
-            const hasControlImage = controlImageInput && controlImageInput.files && controlImageInput.files.length > 0;
-            const dot = document.getElementById('controlnetDot');
-            const text = document.getElementById('controlnetText');
-            const details = document.getElementById('controlnetDetails');
-            
-            if (hasControlImage) {
-                dot.style.backgroundColor = '#10b981';
-                text.textContent = `✅ ControlNet Active • Preprocessor: ${getPreprocessorName(currentPreprocessor)}`;
-                details.innerHTML = `Using ${getPreprocessorName(currentPreprocessor)} preprocessor with custom settings. ControlNet will guide the generation.`;
+                    }
+                    updateControlNetStatus();
+                };
+                reader.readAsDataURL(file);
             } else {
-                dot.style.backgroundColor = '#ef4444';
-                text.textContent = '⏸️ ControlNet Inactive';
-                details.innerHTML = 'Upload a control image to enable ControlNet guidance.';
+                if (controlPreview) controlPreview.innerHTML = '';
+                updateControlNetStatus();
             }
-        }
-        
-        function getPreprocessorName(id) {
-            const names = {
-                'canny': 'Canny Edge Detection',
-                'depth': 'Depth Map',
-                'openpose': 'OpenPose',
-                'mlsd': 'MLSD Line Detection',
-                'scribble': 'Scribble',
-                'hed': 'HED Edge Detection',
-                'seg': 'Segmentation',
-                'normal': 'Normal Map'
-            };
-            return names[id] || id;
-        }
-        
-        // ========== Get Current Preprocessor Settings ==========
-        window.getPreprocessorSettings = function() {
-            const settings = {
-                preprocessor: currentPreprocessor,
-                params: {}
-            };
-            
-            switch(currentPreprocessor) {
-                case 'canny':
-                    settings.params = {
-                        low_threshold: parseInt(lowSlider?.value || 50),
-                        high_threshold: parseInt(highSlider?.value || 150)
-                    };
-                    break;
-                case 'depth':
-                    settings.params = {
-                        resolution: document.getElementById('depthResolution')?.value || 512
-                    };
-                    break;
-                case 'openpose':
-                    settings.params = {
-                        hands: document.getElementById('openposeHands')?.checked || false,
-                        body: document.getElementById('openposeBody')?.checked || true,
-                        face: document.getElementById('openposeFace')?.checked || false
-                    };
-                    break;
-                case 'mlsd':
-                    settings.params = {
-                        score_threshold: parseFloat(mlsdScore?.value || 0.1),
-                        dist_threshold: parseFloat(mlsdDist?.value || 0.1),
-                        resolution: document.getElementById('mlsdResolution')?.value || 512
-                    };
-                    break;
-                case 'scribble':
-                    settings.params = {
-                        mode: document.getElementById('scribbleMode')?.value || 'hed'
-                    };
-                    break;
-                case 'hed':
-                    settings.params = {
-                        resolution: document.getElementById('hedResolution')?.value || 512
-                    };
-                    break;
-                case 'seg':
-                    settings.params = {
-                        resolution: document.getElementById('segResolution')?.value || 512
-                    };
-                    break;
-                case 'normal':
-                    settings.params = {
-                        resolution: document.getElementById('normalResolution')?.value || 512
-                    };
-                    break;
-            }
-            
-            return settings;
-        };
-        
-        // ========== Generate Button Handler ==========
-        const generateBtn = document.getElementById('generateBtn');
-        if (generateBtn) {
-            generateBtn.onclick = async () => {
-                const settings = window.getPreprocessorSettings();
-                console.log('Generating with settings:', settings);
-                
-                const statusDiv = document.getElementById('status');
-                statusDiv.innerHTML = '🎨 Generating image... Please wait.';
-                statusDiv.style.background = '#fef3c7';
-                statusDiv.style.color = '#92400e';
-                
-                // Here you would call your actual generation API
-                // Example:
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        model: document.getElementById('model').value,
-                        prompt: document.getElementById('positive_prompt').value,
-                        negative_prompt: document.getElementById('negative_prompt').value,
-                        steps: document.getElementById('steps').value,
-                        cfg: document.getElementById('cfg').value,
-                        width: document.getElementById('width').value,
-                        height: document.getElementById('height').value,
-                        sampler: document.getElementById('sampler').value,
-                        preprocessor: settings
-                    })
-                });
-                
-                // Simulate generation
-                setTimeout(() => {
-                    statusDiv.innerHTML = '✅ Generation complete! Check the gallery.';
-                    statusDiv.style.background = '#f0fdf4';
-                    statusDiv.style.color = '#166534';
-                }, 2000);
-            };
-        }
-        
-        // Initialize - show default settings (canny)
-        switchPreprocessor('canny');
-        
-        console.log('Preprocessor system initialized with', preprocessors.length, 'preprocessors');
-    });
-    </script>
+        });
+    }
+    
+    // ========== Generate Button ==========
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.onclick = generate;
+    }
+    
+    // ========== Refresh Gallery Button ==========
+    const refreshBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = refreshGallery;
+    }
+    
+    // ========== Interrupt Button ==========
+    const interruptBtn = document.getElementById('interruptBtn');
+    if (interruptBtn) {
+        interruptBtn.onclick = interruptGeneration;
+    }
+    
+    // ========== Initialize ==========
+    switchPreprocessor('canny');
+    refreshGallery();
+    
+    // Auto-refresh gallery every 10 seconds
+    setInterval(refreshGallery, 10000);
+    
+    console.log('Preprocessor system initialized with', preprocessors.length, 'preprocessors');
+});
+
+// Make functions global for HTML onclick
+window.downloadImage = downloadImage;
+window.switchPreprocessor = switchPreprocessor;
+window.generate = generate;
+window.interruptGeneration = interruptGeneration;
+window.refreshGallery = refreshGallery;
+</script>
     <script src="{{ asset('js/comfyui/config.js') }}"></script>
 <script src="{{ asset('js/comfyui/utils.js') }}"></script>
 <script src="{{ asset('js/comfyui/api.js') }}"></script>

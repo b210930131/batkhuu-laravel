@@ -1,13 +1,24 @@
 // routes/api.php
 <?php
+
 use App\Http\Controllers\ComfyUIController;
+use Illuminate\Support\Facades\Route;
 
-Route::prefix('comfyui')->group(function () {
-    Route::get('/object_info', [ComfyUIController::class, 'getObjectInfo']);
-    Route::get('/health', [ComfyUIController::class, 'healthCheck']);
-    Route::get('/system_stats', [ComfyUIController::class, 'getSystemStats']);
-    // Add other proxy routes here
+// Public routes
+Route::get('/comfyui/health', [ComfyUIController::class, 'health']);
+Route::get('/comfyui/object-info', [ComfyUIController::class, 'proxyObjectInfo']);
+
+// Protected routes (auth required)
+Route::middleware('auth:sanctum')->group(function () {
+    // ComfyUI generation
+    Route::post('/generate', [ComfyUIController::class, 'generate']);
+    
+    // ComfyUI proxy endpoints
+    Route::prefix('comfyui')->group(function () {
+        Route::get('/history', [ComfyUIController::class, 'proxyHistory']);
+        Route::get('/view', [ComfyUIController::class, 'proxyView']);
+        Route::post('/interrupt', [ComfyUIController::class, 'proxyInterrupt']);
+        Route::get('/queue', [ComfyUIController::class, 'proxyQueue']);
+        Route::get('/system-stats', [ComfyUIController::class, 'proxySystemStats']);
+    });
 });
-
-Route::post('/generate', [ComfyUIController::class, 'generate']);
-Route::post('/api/generate', [ComfyUIController::class, 'generate']);
