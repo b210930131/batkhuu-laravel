@@ -1,0 +1,105 @@
+Positive Prompt: Modern Architectural Transformation
+Prompt: > Professional architectural photography of a luxury modern house, transformation from old to contemporary, large floor-to-ceiling glass windows, smooth white concrete walls, charred wood accents, flat roof design.
+
+Lighting & Environment: Golden hour sunset, warm orange and purple sky, volumetric lighting. Elegant outdoor warm LED path lights, glowing interior lights visible through windows, soft bokeh background.
+
+Quality Modifiers: 8k resolution, photorealistic, highly detailed, sharp focus, ray tracing, cinematic lighting, masterpiece, trending on ArchDaily.
+
+Negative Prompt: Keeping it Clean
+Negative Prompt: > (old, weathered, derelict, ruined:1.2), bricks, pitched roof, shutters, messy garden, blurry, distorted, low quality, grainy, watermark, text, signature, people, cars, deformed architecture, out of frame, dark shadows, overcast, neon colors.
+
+Диплом төслийн хувьд интерьер, экстерьер болон тавилга гаргаж авахад хамгийн чухал зүйл бол "гэрэлтүүлэг", "материал" болон "архитектурын нарийвчлал" байдаг.
+
+ControlNet ашиглаж байгаа үед Prompt нь зөвхөн агуулгыг (өнгө, материал) тайлбарлахад чиглэгдэх ёстой, учир нь хэлбэр дүрсийг ControlNet (MLSD, Canny) аль хэдийн барьчихсан байгаа.
+
+1. Интерьер Дизайн (Дотоод засал)
+Энэ prompt нь өрөөг цэлгэр, орчин үеийн, мэргэжлийн түвшинд харагдуулна.
+
+Positive Prompt:
+
+masterpiece, best quality, ultra-detailed, professional interior photography, modern luxury interior design, (soft natural lighting:1.2), photorealistic, 8k resolution, cinematic composition, high-end furniture, realistic textures, floor-to-ceiling windows, hyper-realistic wood and marble textures, architectural visualization.
+
+Negative Prompt:
+
+(worst quality, low quality:1.4), blurry, distorted, deformed, messy room, low resolution, cartoon, anime, sketch, painting, dark, bad lighting, grainy, extra furniture, cluttered, watermark, text, signature.
+
+2. Экстерьер Дизайн (Барилгын гадна тал)
+Энэ нь архитектурын хэлбэр, хүрээлэн буй орчныг тодотгоно.
+
+Positive Prompt:
+
+masterpiece, architectural photography, modern building exterior, (golden hour lighting:1.1), luxury facade, glass and concrete materials, realistic landscape, high-quality rendering, V-Ray style, Unreal Engine 5 render, sharp focus, volumetric lighting, hyper-detailed environment, realistic sky.
+
+Negative Prompt:
+
+(worst quality, low quality:1.4), distorted architecture, unrealistic perspective, blurry, foggy, messy garden, bad reflections, overexposed, cartoonish, 3d render look, low-poly, floating objects.
+
+3. Тавилга (Furniture Design)
+Тавилгын материал, хийцийг маш нарийн харуулахад зориулав.
+
+Positive Prompt:
+
+studio lighting, close-up of high-end furniture, (exquisite wood grain texture:1.2), premium leather/fabric, minimalist design, elegant curves, macro photography, neutral background, (sharp details:1.2), photorealistic, octane render, 8k, soft shadows, luxury craftsmanship.
+
+Negative Prompt:
+
+(worst quality, low quality:1.4), plastic look, low detail texture, blurry, flat lighting, unrealistic proportions, distorted legs, messy background, grainy, noise, out of focus.
+
+
+
+Дипломд ашиглах "Хүчтэй" үгс (Keywords):ХэрэглээНэмэх үгс (Positive)Хасах үгс (Negative)Гэрэлтүүлэгnatural light, global illumination, soft shadowsharsh shadows, overexposed, darkЧанарт8k resolution, raw photo, highly detailedblurry, lowres, pixelatedМатериалconcrete, polished wood, brushed metalshiny plastic, flat texture, fake
+
+
+
+1. Бодит мэт (Photorealistic Hybrid)
+Энэ промпт нь гориллын үс, биеийн бүтцийг хүний нүүрний онцлогтой маш нарийн хольж өгнө.
+
+Positive Prompt:
+
+(masterpiece:1.2), (photorealistic:1.3), a hyper-detailed hybrid of a human male face and a silverback gorilla, masculine facial features blended with primate anatomy, deep expressive eyes, thick dark fur, powerful shoulders, cinematic lighting, 8k resolution, highly detailed skin texture and fur, moody atmosphere, professional photography, DreamShaper style.
+
+Negative Prompt:
+
+(worst quality, low quality:1.4), cartoon, anime, drawing, illustration, deformed face, bad anatomy, missing fur, smooth skin, bright colors, extra fingers, blurry, watermark, text.
+
+2. Уран сайхны / Дижитал арт (Fantasy/Artistic)
+Хэрэв та дипломын ажил эсвэл концепт арт хэлбэрээр арай илүү "хүчирхэг", уран сайхны байдлаар гаргахыг хүсвэл:
+
+Positive Prompt:
+
+digital art, epic concept art of a human-gorilla warrior, intense gaze, intricate fur details, majestic primate features, human-like expressions, dark jungle background, volumetric rays of light, sharp focus, Unreal Engine 5 render, trending on ArtStation, detailed textures.
+
+Negative Prompt:
+
+(worst quality, low quality:1.4), simple background, flat lighting, 3d render, plastic look, distorted eyes, lowres, grainy.
+
+
+
+
+
+"positive_prompt": "RAW photo, close-up portrait of a beautiful young Mongolian woman, realistic skin texture, natural lighting, detailed face, 8k",
+    "negative_prompt": "cartoon, anime, 3d render, painting, illustration, deformed, ugly",
+
+
+
+
+
+
+A professional AI research laboratory with a minimalist 'tech-room' interior. Along the main wall, 3-4 high-end server racks are neatly recessed into the architecture. Two high-tech projectors are mounted on the ceiling, casting detailed holographic data visualizations and neural network diagrams directly onto the matte gray walls. The room features industrial GPU workstations with liquid cooling. Lighting is cozy, creating a focused.
+
+RealVisXL V5.0-д зориулсан prompt зөвлөмж
+Сайн ажилладаг prompt загварууд:
+
+text
+# Портрет зураг
+RAW photo, close-up portrait of a [дүрслэл] woman/man, realistic skin texture, detailed eyes, natural lighting, shallow depth of field, 8k, highly detailed
+
+# Бүтэн биеийн зураг
+RAW photo, full body shot of a [дүрслэл] person, standing, realistic proportions, detailed clothing, soft shadows, 8k
+
+# Хос хүний зураг
+RAW photo, two people, [дүрслэл], realistic, natural interaction, detailed faces, professional photography
+Negative prompt (үргэлж хэрэглэх):
+
+text
+cartoon, anime, 3d render, painting, illustration, deformed, ugly, blurry, low quality, bad anatomy, extra limbs, fused fingers, distorted face

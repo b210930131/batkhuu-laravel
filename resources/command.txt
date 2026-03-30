@@ -1,0 +1,56 @@
+wsl -d ubuntu
+cd ~/dev-batkhuu/laravel-comfyui/
+http://127.0.0.1:8188
+php artisan view:clear
+php artisan route:clear
+php artisan cache:clear
+
+#############################################
+asuudal ip automataar oorchlogdoh ip forward
+
+https://api.eit.edu.mn/lesson/itm301/
+//wsl$
+wsl --list --verbose
+wsl --terminate Ubuntu
+
+cd ~/ComfyUI/
+source venv/bin/activate
+
+python main.py --listen 127.0.0.1 --port 8188			ene 2 chuhal
+php artisan serve --host=0.0.0.0 --port=8000                              ene2 chuhal
+
+
+python main.py --listen 127.0.0.1 --port 8188
+python main.py --listen 0.0.0.0 --port 8188
+python main.py --listen 0.0.0.0 --port 8188 --enable-cors-header
+
+php artisan serve --port=8000
+python main.py --listen --enable-cors-header=http://localhost,http://127.0.0.1
+python main.py --listen --enable-cors-header=http://localhost
+
+http://localhost:8188
+
+
+python main.py --listen 0.0.0.0 --port 8188 --midvram
+# 1024x1024, 25 steps, 1 ControlNet (MLSD эсвэл Canny)
+
+sudo truncate -s 0
+
+php artisan route:clear (If you changed api.php)
+
+php artisan cache:clear (General cleanup)
+
+php artisan view:clear (If you are using Blade templates)
+
+curl http://127.0.0.1:8188/object_info | jq '.CheckpointLoaderSimple.input.required.ckpt_name[0]'
+
+
+cd ~/myapp
+
+# Storage folder-ийн permissions зөв эсэх
+chmod -R 775 storage
+chmod -R 775 bootstrap/cache
+
+# Owner-г зөв тохируулах (webserver user)
+sudo chown -R $USER:www-data storage
+sudo chown -R $USER:www-data bootstrap/cache
