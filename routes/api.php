@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/comfyui/health', [ComfyUIController::class, 'health']);
 Route::get('/comfyui/object-info', [ComfyUIController::class, 'proxyObjectInfo']);
 
+
+Route::get('/checkpoints', [ComfyUIController::class, 'getCheckpoints']);
+
 // Protected routes (auth required)
 Route::middleware('auth:sanctum')->group(function () {
     // ComfyUI generation

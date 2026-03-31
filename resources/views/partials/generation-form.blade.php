@@ -298,6 +298,7 @@
                 <div class="control-group">
                     <label>🎭 Model Selection</label>
                     <select id="model">
+                        <option value="">Loading models...</option>
                         <option value="dreamshaper_8.safetensors">✨ Dreamshaper 8 (SD1.5)</option>
                         <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5)</option>
                         <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5)</option>
@@ -689,25 +690,71 @@ function setupSliders() {
 function setupSDXLSupport() {
     const modelSelect = document.getElementById('model');
     const refinerGroup = document.getElementById('refinerGroup');
+    const refinerSelect = document.getElementById('refiner_model');
     
     if (modelSelect && refinerGroup) {
         modelSelect.addEventListener('change', () => {
-            const isSDXL = modelSelect.value.toLowerCase().includes('sdxl');
-            refinerGroup.style.display = isSDXL ? 'block' : 'none';
+            const selectedModel = modelSelect.value.toLowerCase();
+            const isSDXL = selectedModel.includes('sdxl') || selectedModel.includes('xl');
+            const isFlux = selectedModel.includes('flux');
+            const isSD35 = selectedModel.includes('sd3.5');
             
             if (isSDXL) {
-                const widthInput = document.getElementById('width');
-                const heightInput = document.getElementById('height');
-                if (widthInput && heightInput && widthInput.value === '512') {
-                    widthInput.value = '1024';
-                    heightInput.value = '1024';
+                refinerGroup.style.display = 'block';
+                
+                // Auto-select refiner if available
+                if (refinerSelect && refinerSelect.options.length > 0) {
+                    let hasRefiner = false;
+                    for (let i = 0; i < refinerSelect.options.length; i++) {
+                        if (refinerSelect.options[i].value.toLowerCase().includes('refiner')) {
+                            refinerSelect.value = refinerSelect.options[i].value;
+                            hasRefiner = true;
+                            break;
+                        }
+                    }
                 }
+                
+                // Set default steps for SDXL
                 const stepsInput = document.getElementById('steps');
                 if (stepsInput && stepsInput.value === '20') {
                     stepsInput.value = '30';
                 }
+                
+                // Set default refiner steps
+                const refinerStepsInput = document.getElementById('refiner_steps');
+                if (refinerStepsInput && refinerStepsInput.value === '') {
+                    refinerStepsInput.value = '15';
+                }
+                
+                // Show SDXL resolution hint
+                updateResolutionHint(1024, 1024);
+            } else if (isFlux || isSD35) {
+                refinerGroup.style.display = 'none';
+                updateResolutionHint(1024, 1024);
+                
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '⚠️ High VRAM model selected. Make sure you have enough GPU memory.';
+                    statusDiv.style.background = '#fff3cd';
+                    statusDiv.style.color = '#856404';
+                    setTimeout(() => {
+                        if (statusDiv.innerHTML.includes('High VRAM')) {
+                            statusDiv.innerHTML = '✅ Ready • ControlNet inactive';
+                            statusDiv.style.background = '#f0fdf4';
+                            statusDiv.style.color = '#166534';
+                        }
+                    }, 5000);
+                }
+            } else {
+                refinerGroup.style.display = 'none';
+                updateResolutionHint(512, 512);
             }
         });
+        
+        // Trigger initial check
+        setTimeout(() => {
+            modelSelect.dispatchEvent(new Event('change'));
+        }, 500);
     }
 }
 
@@ -818,6 +865,139 @@ async function pollForResults(promptId) {
             console.error('Polling error:', error);
         }
     }, 2000);
+}
+// ========== LOAD MODELS DYNAMICALLY ==========
+async function loadModels() {
+    const modelSelect = document.getElementById('model');
+    if (!modelSelect) return;
+    
+    modelSelect.innerHTML = '<option value="">Loading models...</option>';
+    
+    try {
+        const response = await fetch('/api/comfyui/object_info');
+        const data = await response.json();
+        
+        if (data && data.checkpoints && data.checkpoints.length > 0) {
+            const checkpoints = data.checkpoints;
+            
+            // Organize models by type
+            const sd15Models = [];
+            const sdxlModels = [];
+            const fluxModels = [];
+            const otherModels = [];
+            
+            checkpoints.forEach(model => {
+                const lowerModel = model.toLowerCase();
+                if (lowerModel.includes('sdxl') || lowerModel.includes('xl')) {
+                    sdxlModels.push(model);
+                } else if (lowerModel.includes('flux')) {
+                    fluxModels.push(model);
+                } else if (lowerModel.includes('sd15') || lowerModel.includes('v1-5') || 
+                           lowerModel.includes('dreamshaper') || lowerModel.includes('realistic')) {
+                    sd15Models.push(model);
+                } else if (lowerModel.includes('sd3.5') || lowerModel.includes('qwen')) {
+                    otherModels.push(model);
+                } else {
+                    otherModels.push(model);
+                }
+            });
+            
+            // Build the options HTML
+            let optionsHtml = '';
+            
+            if (sd15Models.length > 0) {
+                optionsHtml += '<optgroup label="📦 SD1.5 Models">';
+                sd15Models.forEach(model => {
+                    const selected = model === 'dreamshaper_8.safetensors' ? 'selected' : '';
+                    optionsHtml += `<option value="${model}" ${selected}>✨ ${model}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            if (sdxlModels.length > 0) {
+                optionsHtml += '<optgroup label="🎨 SDXL Models (1024x1024)">';
+                sdxlModels.forEach(model => {
+                    optionsHtml += `<option value="${model}">🎨 ${model}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            if (fluxModels.length > 0) {
+                optionsHtml += '<optgroup label="⚡ Flux Models (High VRAM)">';
+                fluxModels.forEach(model => {
+                    optionsHtml += `<option value="${model}">⚡ ${model}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            if (otherModels.length > 0) {
+                optionsHtml += '<optgroup label="🌀 Other Models">';
+                otherModels.forEach(model => {
+                    optionsHtml += `<option value="${model}">🌀 ${model}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            modelSelect.innerHTML = optionsHtml;
+            
+            // Trigger change event to update SDXL settings
+            modelSelect.dispatchEvent(new Event('change'));
+            
+            console.log(`✅ Loaded ${checkpoints.length} models`);
+        } else {
+            // Fallback to default models if API fails
+            modelSelect.innerHTML = `
+                <option value="dreamshaper_8.safetensors">✨ Dreamshaper 8 (SD1.5)</option>
+                <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5)</option>
+                <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5)</option>
+                <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (1024x1024)</option>
+                <option value="flux1-dev-fp8.safetensors">⚡ Flux Dev FP8</option>
+                <option value="sd3.5_large_fp8_scaled.safetensors">🌀 SD3.5 Large FP8</option>
+                <option value="qwen_image_2512_fp8_e4m3fn.safetensors">🖼️ Qwen Image 2.5</option>
+            `;
+            console.warn('Using fallback models');
+        }
+    } catch (error) {
+        console.error('Failed to load models:', error);
+        // Fallback options
+        modelSelect.innerHTML = `
+            <option value="dreamshaper_8.safetensors">✨ Dreamshaper 8 (SD1.5)</option>
+            <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5)</option>
+            <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5)</option>
+            <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (1024x1024)</option>
+        `;
+    }
+}
+
+// Also load refiner models dynamically
+async function loadRefinerModels() {
+    const refinerSelect = document.getElementById('refiner_model');
+    if (!refinerSelect) return;
+    
+    try {
+        const response = await fetch('/api/comfyui/object_info');
+        const data = await response.json();
+        
+        if (data && data.checkpoints && data.checkpoints.length > 0) {
+            const refiners = data.checkpoints.filter(model => 
+                model.toLowerCase().includes('refiner') || 
+                model.toLowerCase().includes('sdxl') && model.toLowerCase().includes('refiner')
+            );
+            
+            if (refiners.length > 0) {
+                refinerSelect.innerHTML = refiners.map(model => 
+                    `<option value="${model}">🔧 ${model}</option>`
+                ).join('');
+            } else {
+                // Default refiner options
+                refinerSelect.innerHTML = `
+                    <option value="sd_xl_refiner_1.0.safetensors">SDXL Refiner 1.0</option>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load refiner models:', error);
+    }
 }
 
 async function generate() {
@@ -963,10 +1143,15 @@ async function interruptGeneration() {
     }
 }
 
+
 // ========== INITIALIZATION ==========
 document.addEventListener('DOMContentLoaded', () => {
     console.log('ComfyUI Studio initializing...');
-    
+
+    // Load models first
+    loadModels();
+    loadRefinerModels();
+
     buildPreprocessorUI();
     setupImageUpload();
     setupSliders();

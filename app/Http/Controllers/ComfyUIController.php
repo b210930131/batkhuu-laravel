@@ -363,6 +363,23 @@ class ComfyUIController extends Controller
         ];
     }
 
+    public function getCheckpoints()
+{
+    try {
+        $response = Http::timeout(30)->get($this->comfyUrl . '/object_info');
+        if ($response->successful()) {
+            $data = $response->json();
+            $checkpoints = $data['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0] ?? [];
+            return response()->json([
+                'success' => true,
+                'checkpoints' => $checkpoints
+            ]);
+        }
+        return response()->json(['success' => false, 'error' => 'Failed to fetch checkpoints'], 500);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
     // Proxy methods
     public function proxyHistory()
 {
@@ -583,11 +600,11 @@ class ComfyUIController extends Controller
             "inputs" => ["image" => [$imgNode, 0]]
         ],
         'mlsd' => [
-            "class_type" => "MLSDPreprocessor", 
+            "class_type" => "M-LSDPreprocessor", 
             "inputs" => [
                 "image" => [$imgNode, 0],
                 "score_threshold" => 0.1,
-                "distance_threshold" => 0.1
+                "dist_threshold" => 0.1  // Fixed: was "distance_threshold", now "dist_threshold"
             ]
         ],
         'hed' => [
