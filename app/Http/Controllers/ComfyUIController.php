@@ -365,19 +365,32 @@ class ComfyUIController extends Controller
 
     // Proxy methods
     public function proxyHistory()
-    {
-        try {
-            $response = Http::timeout(30)->get($this->comfyUrl . '/history');
-            if ($response->successful()) {
-                return response()->json($response->json());
-            }
-            return response()->json(['error' => 'Failed to fetch history'], $response->status());
-        } catch (\Exception $e) {
-            Log::error('History proxy error: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+{
+    try {
+        // Clear any previous output
+        if (ob_get_level()) {
+            ob_end_clean();
         }
+        ob_start();
+        
+        $response = Http::timeout(30)->get($this->comfyUrl . '/history');
+        
+        if ($response->successful()) {
+            // Clear output buffer before returning
+            ob_end_clean();
+            return response()->json($response->json())
+                ->header('Content-Type', 'application/json');
+        }
+        
+        ob_end_clean();
+        return response()->json(['error' => 'Failed to fetch history'], $response->status());
+        
+    } catch (\Exception $e) {
+        ob_end_clean();
+        Log::error('History proxy error: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
     }
-
+}
     public function proxyView(Request $request)
     {
         $filename = $request->query('filename');

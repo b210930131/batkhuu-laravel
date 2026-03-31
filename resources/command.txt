@@ -54,3 +54,15 @@ chmod -R 775 bootstrap/cache
 # Owner-г зөв тохируулах (webserver user)
 sudo chown -R $USER:www-data storage
 sudo chown -R $USER:www-data bootstrap/cache
+
+
+cd /home/batkhuu/myapp
+
+# Set correct permissions
+chmod -R 775 storage
+chmod -R 775 bootstrap/cache
+chmod -R 775 storage/framework/views
+
+# Set ownership (adjust user/group as needed)
+chown -R batkhuu:batkhuu storage
+chown -R batkhuu:batkhuu bootstrap/cache
