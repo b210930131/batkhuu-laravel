@@ -31,12 +31,17 @@ Route::middleware(['auth'])->group(function () {
 
     // User Gallery Page (NEW)
     Route::get('/my-gallery', [ComfyUIController::class, 'myGallery'])->name('gallery');
-
+    Route::get('/images', [ComfyUIController::class, 'getUserImages']); // ADD THIS
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/api/images/complete', [ComfyUIController::class, 'finalizeImage']);
+    Route::get('/api/images', function() {
+            return App\Models\GeneratedImage::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->get();
+        });
     /*
     |--------------------------------------------------------------------------
     | API / ComfyUI Proxy Routes
@@ -63,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/api/models', [ComfyUIController::class, 'getModels']);
             Route::get('/api/refiners', [ComfyUIController::class, 'getRefinerModels']);
             Route::get('/api/images', [ComfyUIController::class, 'getUserImages']);
+            
             // Add other proxies here if needed
         });
     });

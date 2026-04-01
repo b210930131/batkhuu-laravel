@@ -673,9 +673,11 @@ public function getRefinerModels()
 }
 public function getUserImages()
 {
+    // This pulls only the images for the logged-in user
     $images = \App\Models\GeneratedImage::where('user_id', auth()->id())
                 ->orderBy('created_at', 'desc')
                 ->get();
+
     return response()->json($images);
 }
 
