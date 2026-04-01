@@ -21,80 +21,84 @@ class ComfyUIController extends Controller
      * Main Generation Entry Point
      */
     public function generate(Request $request)
-    {
-        Log::info('Generate request received', $request->all());
+{
+    Log::info('Generate request received', $request->all());
+    
+    try {
+        $validated = $request->validate([
+            'client_id' => 'nullable|string',
+            'model' => 'required|string',
+            'refiner_model' => 'nullable|string',
+            'positive_prompt' => 'required|string',
+            'negative_prompt' => 'nullable|string',
+            'steps' => 'integer|min:1|max:100',
+            'refiner_steps' => 'nullable|integer|min:1|max:100',
+            'cfg' => 'numeric|min:1|max:20',
+            'width' => 'integer|min:256|max:1536',
+            'height' => 'integer|min:256|max:1536',
+            'sampler' => 'string',
+            'controlnet' => 'nullable|array',
+            'controlnet.enabled' => 'boolean',
+            'controlnet.preprocessor' => 'nullable|string',
+            'controlnet.image_base64' => 'nullable|string',
+            'controlnet.strength' => 'nullable|numeric',
+        ]);
+
+        $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
         
-        try {
-            $validated = $request->validate([
-                'client_id' => 'nullable|string',
-                'model' => 'required|string',
-                'refiner_model' => 'nullable|string', // Add refiner model
-                'positive_prompt' => 'required|string',
-                'negative_prompt' => 'nullable|string',
-                'steps' => 'integer|min:1|max:100',
-                'refiner_steps' => 'nullable|integer|min:1|max:100', // Add refiner steps
-                'cfg' => 'numeric|min:1|max:20',
-                'width' => 'integer|min:256|max:1536',
-                'height' => 'integer|min:256|max:1536',
-                'sampler' => 'string',
-                'controlnet' => 'nullable|array',
-                'controlnet.enabled' => 'boolean',
-                'controlnet.preprocessor' => 'nullable|string',
-                'controlnet.image_base64' => 'nullable|string',
-                'controlnet.strength' => 'nullable|numeric',
-            ]);
+        // Workflow Selection Logic
+        $isSDXL = str_contains(strtolower($validated['model']), 'sdxl') || str_contains(strtolower($validated['model']), 'sd_xl');
+        $hasRefiner = !empty($validated['refiner_model']);
 
-            $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
-            
-            // Check if this is SDXL model (needs refiner)
-            $isSDXL = str_contains(strtolower($validated['model']), 'sdxl');
-            $hasRefiner = !empty($validated['refiner_model']);
-
-            // Logic Switch: Standard vs ControlNet vs SDXL
-            if ($isSDXL || $hasRefiner) {
-                Log::info('Using SDXL workflow with refiner');
-                $workflow = $this->buildSDXLWorkflow($validated);
-            } elseif (!empty($validated['controlnet']['enabled']) && !empty($validated['controlnet']['image_base64'])) {
-                $workflow = $this->buildControlNetWorkflow($validated);
-                Log::info('Using ControlNet workflow');
-            } else {
-                $workflow = $this->buildBaseWorkflow($validated);
-                Log::info('Using base workflow');
-            }
-
-            // Send to ComfyUI
-            $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
-                'prompt' => $workflow,
-                'client_id' => $clientId,
-            ]);
-
-            Log::info('ComfyUI response', ['status' => $response->status()]);
-
-            if ($response->failed()) {
-                Log::error('ComfyUI Error', ['response' => $response->body()]);
-                return response()->json([
-                    'success' => false, 
-                    'error' => 'ComfyUI Error: ' . $response->body()
-                ], 500);
-            }
-
-            $responseData = $response->json();
-            
-            return response()->json([
-                'success' => true, 
-                'prompt_id' => $responseData['prompt_id'],
-                'client_id' => $clientId
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Generation Failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'success' => false, 
-                'error' => $e->getMessage()
-            ], 500);
+        if ($isSDXL || $hasRefiner) {
+            $workflow = $this->buildSDXLWorkflow($validated);
+        } elseif (!empty($validated['controlnet']['enabled'])) {
+            $workflow = $this->buildControlNetWorkflow($validated);
+        } else {
+            $workflow = $this->buildBaseWorkflow($validated);
         }
-    }
 
+        // Send to ComfyUI
+        $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
+            'prompt' => $workflow,
+            'client_id' => $clientId,
+        ]);
+
+        if ($response->failed()) {
+            throw new \Exception('ComfyUI Connection Failed: ' . $response->body());
+        }
+
+        $responseData = $response->json();
+        
+        // Ensure prompt_id exists in response
+        if (!isset($responseData['prompt_id'])) {
+            throw new \Exception('ComfyUI did not return a prompt_id');
+        }
+
+        $promptId = $responseData['prompt_id'];
+
+        // Create the record
+        \App\Models\GeneratedImage::create([
+            'user_id' => auth()->id(),
+            'prompt_id' => $promptId, 
+            'file_name' => null,     
+            'positive_prompt' => $validated['positive_prompt'],
+            'model_used' => $validated['model'],
+            'width' => $validated['width'],
+            'height' => $validated['height'],
+        ]);
+
+        return response()->json([
+            'success' => true, 
+            'prompt_id' => $promptId,
+            'client_id' => $clientId
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Generation Failed: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
     /**
      * SDXL Workflow with Base + Refiner
      */
@@ -603,5 +607,48 @@ class ComfyUIController extends Controller
     // This will be handled by the frontend passing the correct model
     
     return $models[$type] ?? 'control_sd15_canny.pth';
+}
+public function myGallery()
+{
+    // Get images for current user, showing most recent first
+    $images = \App\Models\GeneratedImage::where('user_id', auth()->id())
+        ->orderBy('created_at', 'desc')
+        ->paginate(12);
+
+    return view('gallery.index', compact('images'));
+}
+
+// Add this to ComfyUIController.php
+
+public function finalizeImage(Request $request)
+{
+    Log::info('Finalizing image record', $request->all());
+
+    try {
+        $validated = $request->validate([
+            'prompt_id' => 'required|string',
+            'file_name' => 'required|string'
+        ]);
+
+        // Find the record created during the generate() call for this specific user
+        $image = \App\Models\GeneratedImage::where('prompt_id', $validated['prompt_id'])
+                    ->where('user_id', auth()->id())
+                    ->first();
+
+        if ($image) {
+            $image->update([
+                'file_name' => $validated['file_name']
+            ]);
+            
+            Log::info('Image record updated successfully', ['id' => $image->id]);
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Record not found'], 404);
+
+    } catch (\Exception $e) {
+        Log::error('Finalize Failed: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
 }
 }

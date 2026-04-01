@@ -873,7 +873,7 @@ async function generate() {
 // Poll for results
 async function pollForResults(promptId) {
     let attempts = 0;
-    const maxAttempts = 60;
+    const maxAttempts = 100; // Increased for complex renders
     
     const interval = setInterval(async () => {
         attempts++;
@@ -884,26 +884,73 @@ async function pollForResults(promptId) {
             
             if (history[promptId]) {
                 clearInterval(interval);
+                
+                // 1. Extract the filename from ComfyUI history
+                const outputs = history[promptId].outputs;
+                let generatedFilename = null;
+                
+                for (const nodeId in outputs) {
+                    if (outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+                        generatedFilename = outputs[nodeId].images[0].filename;
+                        break;
+                    }
+                }
+
+                // 2. IMPORTANT: Save filename to your Laravel Database
+                if (generatedFilename) {
+                    await fetch('/api/images/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            prompt_id: promptId,
+                            file_name: generatedFilename
+                        })
+                    });
+                }
+
+                // 3. UI Feedback
                 refreshGallery();
                 const status = document.getElementById('status');
-                status.innerHTML = '✅ Generation complete! Image added to gallery.';
+                status.innerHTML = '✅ Generation complete! Saved to gallery.';
                 status.style.background = '#d4edda';
-                status.style.color = '#155724';
                 
                 setTimeout(() => {
-                    status.innerHTML = '✅ Ready • ControlNet ' + (currentControlImage ? 'active' : 'inactive');
+                    status.innerHTML = '✅ Ready';
                     status.style.background = '#f0fdf4';
-                    status.style.color = '#166534';
                 }, 3000);
             }
             
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
+                console.error('Polling timed out');
             }
         } catch (error) {
             console.error('Polling error:', error);
         }
     }, 2000);
+}
+
+
+// New helper function to link the image to the user in the DB
+async function saveImageToDatabase(promptId, filename) {
+    try {
+        await fetch('/api/images/complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                prompt_id: promptId,
+                file_name: filename
+            })
+        });
+    } catch (e) {
+        console.error('Failed to save to user gallery database', e);
+    }
 }
 
 // Refresh gallery
