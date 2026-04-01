@@ -826,7 +826,7 @@ async function loadModels() {
     modelSelect.innerHTML = '<option value="">Loading models...</option>';
     
     try {
-        const response = await fetch('/api/comfyui/object_info');
+        const response = await fetch('/api/comfyui/object-info');
         const data = await response.json();
         
         if (data && data.checkpoints && data.checkpoints.length > 0) {
@@ -932,7 +932,7 @@ async function loadRefinerModels() {
     if (!refinerSelect) return;
     
     try {
-        const response = await fetch('/api/comfyui/object_info');
+        const response = await fetch('/api/comfyui/object-info');
         const data = await response.json();
         
         if (data && data.checkpoints && data.checkpoints.length > 0) {

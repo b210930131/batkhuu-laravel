@@ -128,8 +128,8 @@ class ComfyUIController extends Controller
             "inputs" => [
                 "seed" => rand(1, 999999999),
                 // "steps" => $totalSteps,
-                "steps" => 30, // Total steps
-                "end_at_step" => 20, // Base stops at 20
+                "steps" => $totalSteps, // Total steps
+                
                 "cfg" => $p['cfg'] ?? 7,
                 "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
                 "scheduler" => "karras",
@@ -159,7 +159,7 @@ class ComfyUIController extends Controller
                 "negative" => ["16", 0],
                 "latent_image" => ["3", 0], // LINK: Input is output of Base
                 // "start_at_step" => $baseSteps,
-                "start_at_step" => 20,
+                "start_at_step" => $baseSteps,
                 "end_at_step" => 10000,
                 "return_with_leftover_noise" => "disable"
             ]
@@ -451,24 +451,25 @@ class ComfyUIController extends Controller
         }
     }
 
-    public function proxyObjectInfo()
-    {
-        try {
-            $response = Http::timeout(30)->get($this->comfyUrl . '/object_info');
-            if ($response->successful()) {
-                $data = $response->json();
-                return response()->json([
-                    'success' => true,
-                    'checkpoints' => $data['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0] ?? [],
-                    'controlnets' => $data['ControlNetLoader']['input']['required']['control_net_name'][0] ?? [],
-                    'samplers' => $data['KSampler']['input']['required']['sampler_name'][0] ?? [],
-                ]);
-            }
-            return response()->json(['success' => false, 'error' => 'Failed to fetch object info'], $response->status());
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+ public function proxyObjectInfo()
+{
+    try {
+        $response = Http::timeout(30)->get($this->comfyUrl . '/object_info');
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            // We return the full data so JS can pick what it needs
+            return response()->json([
+                'success' => true,
+                'checkpoints' => $data['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0] ?? [],
+                'samplers' => $data['KSampler']['input']['required']['sampler_name'][0] ?? [],
+            ]);
         }
+        return response()->json(['error' => 'ComfyUI not responding'], 500);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
     public function health()
     {
@@ -630,7 +631,7 @@ public function finalizeImage(Request $request)
             'file_name' => 'required|string'
         ]);
 
-        // Find the record created during the generate() call for this specific user
+        //  Find the record created during the generate() call for this specific user
         $image = \App\Models\GeneratedImage::where('prompt_id', $validated['prompt_id'])
                     ->where('user_id', auth()->id())
                     ->first();
@@ -651,4 +652,33 @@ public function finalizeImage(Request $request)
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 }
+
+public function getModels()
+{
+    // This tells the frontend which checkpoints are available in your ComfyUI folder
+    $models = [
+        'sd_xl_base_1.0.safetensors',
+        'v1-5-pruned-emaonly.safetensors',
+        // Add your actual filenames here
+    ];
+    return response()->json($models);
+}
+
+public function getRefinerModels()
+{
+    $refiners = [
+        'sd_xl_refiner_1.0.safetensors',
+    ];
+    return response()->json($refiners);
+}
+public function getUserImages()
+{
+    $images = \App\Models\GeneratedImage::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->get();
+    return response()->json($images);
+}
+
+// app/Http/Controllers/ComfyUIController.php
+
 }

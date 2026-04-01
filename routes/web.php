@@ -58,6 +58,11 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/interrupt', [ComfyUIController::class, 'proxyInterrupt']);
             Route::get('/queue', [ComfyUIController::class, 'proxyQueue']);
             Route::get('/health', [ComfyUIController::class, 'health']);
+            Route::get('/api/comfyui/view', [ComfyUIController::class, 'proxyView'])->name('proxy.view');
+            Route::get('/object-info', [ComfyUIController::class, 'proxyObjectInfo']); // <--- ADD THIS LINE
+            Route::get('/api/models', [ComfyUIController::class, 'getModels']);
+            Route::get('/api/refiners', [ComfyUIController::class, 'getRefinerModels']);
+            Route::get('/api/images', [ComfyUIController::class, 'getUserImages']);
             // Add other proxies here if needed
         });
     });
@@ -76,3 +81,6 @@ Route::middleware(['auth'])->group(function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 */
+
+
+

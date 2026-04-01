@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/comfyui/health', [ComfyUIController::class, 'health']);
 Route::get('/comfyui/object-info', [ComfyUIController::class, 'proxyObjectInfo']);
 
-
 Route::get('/checkpoints', [ComfyUIController::class, 'getCheckpoints']);
 
 // Protected routes (auth required)
@@ -23,5 +22,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/interrupt', [ComfyUIController::class, 'proxyInterrupt']);
         Route::get('/queue', [ComfyUIController::class, 'proxyQueue']);
         Route::get('/system-stats', [ComfyUIController::class, 'proxySystemStats']);
+        Route::get('/api/comfyui/view', [ComfyUIController::class, 'proxyView'])->name('proxy.view');
     });
 });
