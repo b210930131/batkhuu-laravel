@@ -715,44 +715,34 @@ async function refreshGallery() {
     if (!galleryDiv) return;
     
     try {
-        galleryDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px;">🔄 Loading images...</div>';
+        // Change the URL to your internal Laravel API
+        const response = await fetch('/api/images'); 
+        const images = await response.json();
         
-        const response = await fetch('/api/comfyui/history');
-        const data = await response.json();
-        const images = [];
-        
-        Object.values(data).forEach(prompt => {
-            if (prompt.outputs) {
-                Object.values(prompt.outputs).forEach(output => {
-                    if (output.images) {
-                        output.images.forEach(img => {
-                            images.push(img);
-                        });
-                    }
-                });
-            }
-        });
-        
-        images.reverse();
-        
-        if (images.length === 0) {
-            galleryDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #9ca3af;">🎨 No images yet<br><small>Your generated images will appear here</small></div>';
+        if (!images || images.length === 0) {
+            galleryDiv.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #9ca3af;">🎨 No images yet</div>';
             return;
         }
         
-        galleryDiv.innerHTML = images.map(img => `
-            <div class="image-card">
-                <img src="/api/comfyui/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${img.type || 'output'}" 
-                     onclick="window.open(this.src, '_blank')"
-                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%23ccc\'/%3E%3Ctext x=\'100\' y=\'100\' text-anchor=\'middle\' fill=\'%23999\'%3EError%3C/text%3E%3C/svg%3E'">
-                <div class="image-actions">
-                    <button class="download-btn" onclick="event.stopPropagation(); downloadImage('${img.filename}', '${img.subfolder || ''}', '${img.type || 'output'}')">📥 Download</button>
-                </div>
-            </div>
-        `).join('');
+        galleryDiv.innerHTML = images.map(img => {
+            // If file_name is null, show the "Painting" placeholder
+            if (!img.file_name) {
+                return `<div class="image-card" style="display:flex; align-items:center; justify-content:center; background:#eee;">
+                            <div style="text-align:center">🎨 Painting...<br><small>${img.prompt_id.substring(0,8)}</small></div>
+                        </div>`;
+            }
+
+            // Otherwise show the real image from your symlinked outputs folder
+            return `
+                <div class="image-card">
+                    <img src="/outputs/${img.file_name}" onclick="window.open(this.src, '_blank')">
+                    <div class="image-actions">
+                        <button class="download-btn" onclick="downloadImage('${img.file_name}')">📥 Download</button>
+                    </div>
+                </div>`;
+        }).join('');
     } catch (error) {
         console.error('Gallery error:', error);
-        galleryDiv.innerHTML = `<div style="text-align: center; padding: 60px 20px; color: #ef4444;">❌ Error loading gallery: ${error.message}</div>`;
     }
 }
 
@@ -776,18 +766,49 @@ async function downloadImage(filename, subfolder, type) {
 
 async function pollForResults(promptId) {
     let attempts = 0;
-    const maxAttempts = 60;
+    const maxAttempts = 60; // 2 minutes (60 * 2 seconds)
     
     const interval = setInterval(async () => {
         attempts++;
         
         try {
+            // 1. Check ComfyUI history to see if the job is done
             const response = await fetch('/api/comfyui/history');
             const history = await response.json();
             
             if (history[promptId]) {
                 clearInterval(interval);
+                
+                // 2. Extract the filename from the ComfyUI output
+                const outputs = history[promptId].outputs;
+                let fileName = null;
+                
+                // ComfyUI outputs are nested; we look for the first image filename found
+                for (const nodeId in outputs) {
+                    if (outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+                        fileName = outputs[nodeId].images[0].filename;
+                        break;
+                    }
+                }
+
+                if (fileName) {
+                    // 3. IMPORTANT: Tell Laravel to update the database row from NULL to the actual filename
+                    await fetch('/api/images/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            prompt_id: promptId,
+                            file_name: fileName
+                        })
+                    });
+                }
+
+                // 4. UI Updates
                 await refreshGallery();
+                
                 const statusDiv = document.getElementById('status');
                 if (statusDiv) {
                     statusDiv.innerHTML = '✅ Generation complete! Image added to gallery.';
@@ -799,6 +820,7 @@ async function pollForResults(promptId) {
                         statusDiv.style.color = '#166534';
                     }, 3000);
                 }
+
                 isGenerating = false;
                 const btn = document.getElementById('generateBtn');
                 if (btn) {
@@ -807,11 +829,17 @@ async function pollForResults(promptId) {
                 }
             }
             
+            // Handle Timeout
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
+                console.error('Polling timed out');
                 isGenerating = false;
                 const btn = document.getElementById('generateBtn');
-                if (btn) btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Generate Image';
+                }
+                if (statusDiv) statusDiv.innerHTML = '❌ Timeout: Image taking too long.';
             }
         } catch (error) {
             console.error('Polling error:', error);
