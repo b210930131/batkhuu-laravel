@@ -690,74 +690,22 @@ function setupSliders() {
 function setupSDXLSupport() {
     const modelSelect = document.getElementById('model');
     const refinerGroup = document.getElementById('refinerGroup');
-    const refinerSelect = document.getElementById('refiner_model');
     
-    if (modelSelect && refinerGroup) {
-        modelSelect.addEventListener('change', () => {
-            const selectedModel = modelSelect.value.toLowerCase();
-            const isSDXL = selectedModel.includes('sdxl') || selectedModel.includes('xl');
-            const isFlux = selectedModel.includes('flux');
-            const isSD35 = selectedModel.includes('sd3.5');
-            
-            if (isSDXL) {
-                refinerGroup.style.display = 'block';
-                
-                // Auto-select refiner if available
-                if (refinerSelect && refinerSelect.options.length > 0) {
-                    let hasRefiner = false;
-                    for (let i = 0; i < refinerSelect.options.length; i++) {
-                        if (refinerSelect.options[i].value.toLowerCase().includes('refiner')) {
-                            refinerSelect.value = refinerSelect.options[i].value;
-                            hasRefiner = true;
-                            break;
-                        }
-                    }
-                }
-                
-                // Set default steps for SDXL
-                const stepsInput = document.getElementById('steps');
-                if (stepsInput && stepsInput.value === '20') {
-                    stepsInput.value = '30';
-                }
-                
-                // Set default refiner steps
-                const refinerStepsInput = document.getElementById('refiner_steps');
-                if (refinerStepsInput && refinerStepsInput.value === '') {
-                    refinerStepsInput.value = '15';
-                }
-                
-                // Show SDXL resolution hint
-                updateResolutionHint(1024, 1024);
-            } else if (isFlux || isSD35) {
-                refinerGroup.style.display = 'none';
-                updateResolutionHint(1024, 1024);
-                
-                const statusDiv = document.getElementById('status');
-                if (statusDiv) {
-                    statusDiv.innerHTML = '⚠️ High VRAM model selected. Make sure you have enough GPU memory.';
-                    statusDiv.style.background = '#fff3cd';
-                    statusDiv.style.color = '#856404';
-                    setTimeout(() => {
-                        if (statusDiv.innerHTML.includes('High VRAM')) {
-                            statusDiv.innerHTML = '✅ Ready • ControlNet inactive';
-                            statusDiv.style.background = '#f0fdf4';
-                            statusDiv.style.color = '#166534';
-                        }
-                    }, 5000);
-                }
-            } else {
-                refinerGroup.style.display = 'none';
-                updateResolutionHint(512, 512);
-            }
-        });
-        
-        // Trigger initial check
-        setTimeout(() => {
-            modelSelect.dispatchEvent(new Event('change'));
-        }, 500);
-    }
-}
+    modelSelect.addEventListener('change', () => {
+        const val = modelSelect.value.toLowerCase();
+        // Fixed: Added check for 'sd_xl' to match your filenames
+        const isSDXL = val.includes('sdxl') || val.includes('sd_xl');
 
+        if (isSDXL) {
+            refinerGroup.style.display = 'block';
+            // SDXL performs best at 1024x1024
+            document.getElementById('width').value = 1024;
+            document.getElementById('height').value = 1024;
+        } else {
+            refinerGroup.style.display = 'none';
+        }
+    });
+}
 async function refreshGallery() {
     const galleryDiv = document.getElementById('images');
     if (!galleryDiv) return;

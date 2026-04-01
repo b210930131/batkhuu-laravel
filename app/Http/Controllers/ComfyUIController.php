@@ -99,119 +99,72 @@ class ComfyUIController extends Controller
      * SDXL Workflow with Base + Refiner
      */
     protected function buildSDXLWorkflow(array $p)
-    {
-        $steps = $p['steps'] ?? 20;
-        $refinerSteps = $p['refiner_steps'] ?? $steps;
-        $denoise = 1; // Full denoise for base, refiner will handle detail
+{
+    $baseSteps = $p['steps'] ?? 25; 
+    $refinerSteps = $p['refiner_steps'] ?? 10;
+    $totalSteps = $baseSteps + $refinerSteps; // Important: Samplers must know total count
+
+    return [
+        "4" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
+        "14" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['refiner_model'] ?? 'sd_xl_refiner_1.0.safetensors']],
         
-        return [
-            // Base Model Loader
-            "4" => [
-                "class_type" => "CheckpointLoaderSimple",
-                "inputs" => ["ckpt_name" => $p['model']]
-            ],
-            
-            // Refiner Model Loader (if provided)
-            "14" => [
-                "class_type" => "CheckpointLoaderSimple",
-                "inputs" => ["ckpt_name" => $p['refiner_model'] ?? 'sd_xl_refiner_1.0.safetensors']
-            ],
-            
-            // CLIP Text Encoders for Base
-            "6" => [
-                "class_type" => "CLIPTextEncode",
-                "inputs" => [
-                    "text" => $p['positive_prompt'],
-                    "clip" => ["4", 1]
-                ]
-            ],
-            "7" => [
-                "class_type" => "CLIPTextEncode",
-                "inputs" => [
-                    "text" => $p['negative_prompt'] ?? "",
-                    "clip" => ["4", 1]
-                ]
-            ],
-            
-            // CLIP Text Encoders for Refiner (using same prompts)
-            "15" => [
-                "class_type" => "CLIPTextEncode",
-                "inputs" => [
-                    "text" => $p['positive_prompt'],
-                    "clip" => ["14", 1]
-                ]
-            ],
-            "16" => [
-                "class_type" => "CLIPTextEncode",
-                "inputs" => [
-                    "text" => $p['negative_prompt'] ?? "",
-                    "clip" => ["14", 1]
-                ]
-            ],
-            
-            // Empty Latent Image
-            "5" => [
-                "class_type" => "EmptyLatentImage",
-                "inputs" => [
-                    "width" => $p['width'],
-                    "height" => $p['height'],
-                    "batch_size" => 1
-                ]
-            ],
-            
-            // Base KSampler
-            "3" => [
-                "class_type" => "KSampler",
-                "inputs" => [
-                    "seed" => rand(1, 999999999),
-                    "steps" => $steps,
-                    "cfg" => $p['cfg'] ?? 7,
-                    "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
-                    "scheduler" => "karras",
-                    "denoise" => $denoise,
-                    "model" => ["4", 0],
-                    "positive" => ["6", 0],
-                    "negative" => ["7", 0],
-                    "latent_image" => ["5", 0]
-                ]
-            ],
-            
-            // Refiner KSampler (takes base output and refines)
-            "17" => [
-                "class_type" => "KSampler",
-                "inputs" => [
-                    "seed" => rand(1, 999999999),
-                    "steps" => $refinerSteps,
-                    "cfg" => $p['cfg'] ?? 7,
-                    "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
-                    "scheduler" => "karras",
-                    "denoise" => 0.25, // Refiner denoise strength
-                    "model" => ["14", 0],
-                    "positive" => ["15", 0],
-                    "negative" => ["16", 0],
-                    "latent_image" => ["3", 0]
-                ]
-            ],
-            
-            // VAEDecode
-            "8" => [
-                "class_type" => "VAEDecode",
-                "inputs" => [
-                    "samples" => ["17", 0],
-                    "vae" => ["14", 2]
-                ]
-            ],
-            
-            // Save Image
-            "9" => [
-                "class_type" => "SaveImage",
-                "inputs" => [
-                    "filename_prefix" => "SDXL_",
-                    "images" => ["8", 0]
-                ]
+        // Base Encoders
+        "6" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
+        "7" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["4", 1]]],
+        
+        // Refiner Encoders (using same prompts but refiner CLIP)
+        "15" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["14", 1]]],
+        "16" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["14", 1]]],
+        
+        "5" => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
+
+        // BASE SAMPLER: Run from 0 to 25
+        "3" => [
+            "class_type" => "KSampler",
+            "inputs" => [
+                "seed" => rand(1, 999999999),
+                // "steps" => $totalSteps,
+                "steps" => 30, // Total steps
+                "end_at_step" => 20, // Base stops at 20
+                "cfg" => $p['cfg'] ?? 7,
+                "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
+                "scheduler" => "karras",
+                "denoise" => 1.0,
+                "model" => ["4", 0],
+                "positive" => ["6", 0],
+                "negative" => ["7", 0],
+                "latent_image" => ["5", 0],
+                "start_at_step" => 0,
+                "end_at_step" => $baseSteps, 
+                "return_with_leftover_noise" => "enable" // Keep noise for refiner
             ]
-        ];
-    }
+        ],
+
+        // REFINER SAMPLER: Start at 25, finish at end
+        "17" => [
+            "class_type" => "KSampler",
+            "inputs" => [
+                "seed" => ["3", 0], // Same seed
+                "steps" => $totalSteps,
+                "cfg" => $p['cfg'] ?? 7,
+                "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
+                "scheduler" => "karras",
+                "denoise" => 1.0, 
+                "model" => ["14", 0],
+                "positive" => ["15", 0],
+                "negative" => ["16", 0],
+                "latent_image" => ["3", 0], // LINK: Input is output of Base
+                // "start_at_step" => $baseSteps,
+                "start_at_step" => 20,
+                "end_at_step" => 10000,
+                "return_with_leftover_noise" => "disable"
+            ]
+        ],
+
+        "8" => ["class_type" => "VAEDecode", "inputs" => ["samples" => ["17", 0], "vae" => ["14", 2]]],
+        "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "SDXL_Chained", "images" => ["8", 0]]]
+    ];
+}
 
     /**
      * Base SD1.5 Workflow
