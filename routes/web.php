@@ -8,7 +8,7 @@ use App\Http\Controllers\ProfileController; // Add this
 // Main routes
 Route::get('/', function () {
     return view('partials.generation-form');
-})->name('home');
+})->name('home')->middleware('auth');
 
 Route::get('/comfy', function () {
     return view('partials.generation-form');
