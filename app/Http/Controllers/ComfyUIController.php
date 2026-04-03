@@ -21,154 +21,144 @@ class ComfyUIController extends Controller
      * Main Generation Entry Point
      */
     public function generate(Request $request)
-{
-    Log::info('Generate request received', $request->all());
-    
-    try {
-        $validated = $request->validate([
-            'client_id' => 'nullable|string',
-            'model' => 'required|string',
-            'refiner_model' => 'nullable|string',
-            'positive_prompt' => 'required|string',
-            'negative_prompt' => 'nullable|string',
-            'steps' => 'integer|min:1|max:100',
-            'refiner_steps' => 'nullable|integer|min:1|max:100',
-            'cfg' => 'numeric|min:1|max:20',
-            'width' => 'integer|min:256|max:1536',
-            'height' => 'integer|min:256|max:1536',
-            'sampler' => 'string',
-            'controlnet' => 'nullable|array',
-            'controlnet.enabled' => 'boolean',
-            'controlnet.preprocessor' => 'nullable|string',
-            'controlnet.image_base64' => 'nullable|string',
-            'controlnet.strength' => 'nullable|numeric',
-        ]);
-
-        $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
+    {
+        Log::info('Generate request received', $request->all());
         
-        // Workflow Selection Logic
-        $isSDXL = str_contains(strtolower($validated['model']), 'sdxl') || str_contains(strtolower($validated['model']), 'sd_xl');
-        $hasRefiner = !empty($validated['refiner_model']);
+        try {
+            $validated = $request->validate([
+                'client_id' => 'nullable|string',
+                'model' => 'required|string',
+                'refiner_model' => 'nullable|string',
+                'positive_prompt' => 'required|string',
+                'negative_prompt' => 'nullable|string',
+                'steps' => 'integer|min:1|max:100',
+                'refiner_steps' => 'nullable|integer|min:1|max:100',
+                'cfg' => 'numeric|min:1|max:20',
+                'width' => 'integer|min:256|max:1536',
+                'height' => 'integer|min:256|max:1536',
+                'sampler' => 'string',
+                'controlnet' => 'nullable|array',
+                'controlnet.enabled' => 'boolean',
+                'controlnet.preprocessor' => 'nullable|string',
+                'controlnet.image_base64' => 'nullable|string',
+                'controlnet.strength' => 'nullable|numeric',
+            ]);
 
-        if ($isSDXL || $hasRefiner) {
-            $workflow = $this->buildSDXLWorkflow($validated);
-        } elseif (!empty($validated['controlnet']['enabled'])) {
-            $workflow = $this->buildControlNetWorkflow($validated);
-        } else {
-            $workflow = $this->buildBaseWorkflow($validated);
+            $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
+            
+            // Workflow Selection Logic
+            $isSDXL = str_contains(strtolower($validated['model']), 'sdxl') || str_contains(strtolower($validated['model']), 'sd_xl');
+            $hasRefiner = !empty($validated['refiner_model']);
+
+            if ($isSDXL || $hasRefiner) {
+                $workflow = $this->buildSDXLWorkflow($validated);
+            } elseif (!empty($validated['controlnet']['enabled'])) {
+                $workflow = $this->buildControlNetWorkflow($validated);
+            } else {
+                $workflow = $this->buildBaseWorkflow($validated);
+            }
+
+            $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
+                'prompt' => $workflow,
+                'client_id' => $clientId,
+            ]);
+
+            if ($response->failed()) {
+                throw new \Exception('ComfyUI Connection Failed: ' . $response->body());
+            }
+
+            $responseData = $response->json();
+            if (!isset($responseData['prompt_id'])) {
+                throw new \Exception('ComfyUI did not return a prompt_id');
+            }
+
+            $promptId = $responseData['prompt_id'];
+
+            \App\Models\GeneratedImage::create([
+                'user_id' => auth()->id(),
+                'prompt_id' => $promptId, 
+                'file_name' => null,     
+                'positive_prompt' => $validated['positive_prompt'],
+                'model_used' => $validated['model'],
+                'width' => $validated['width'],
+                'height' => $validated['height'],
+            ]);
+
+            return response()->json(['success' => true, 'prompt_id' => $promptId, 'client_id' => $clientId]);
+
+        } catch (\Exception $e) {
+            Log::error('Generation Failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
-
-        // Send to ComfyUI
-        $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
-            'prompt' => $workflow,
-            'client_id' => $clientId,
-        ]);
-
-        if ($response->failed()) {
-            throw new \Exception('ComfyUI Connection Failed: ' . $response->body());
-        }
-
-        $responseData = $response->json();
-        
-        // Ensure prompt_id exists in response
-        if (!isset($responseData['prompt_id'])) {
-            throw new \Exception('ComfyUI did not return a prompt_id');
-        }
-
-        $promptId = $responseData['prompt_id'];
-
-        // Create the record
-        \App\Models\GeneratedImage::create([
-            'user_id' => auth()->id(),
-            'prompt_id' => $promptId, 
-            'file_name' => null,     
-            'positive_prompt' => $validated['positive_prompt'],
-            'model_used' => $validated['model'],
-            'width' => $validated['width'],
-            'height' => $validated['height'],
-        ]);
-
-        return response()->json([
-            'success' => true, 
-            'prompt_id' => $promptId,
-            'client_id' => $clientId
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Generation Failed: ' . $e->getMessage());
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
-}
     /**
      * SDXL Workflow with Base + Refiner
      */
+    /**
+     * SDXL Workflow with Base + Refiner
+     * Fixed: Added $sharedSeed variable to prevent type mismatch
+     */
     protected function buildSDXLWorkflow(array $p)
-{
-    $baseSteps = $p['steps'] ?? 25; 
-    $refinerSteps = $p['refiner_steps'] ?? 10;
-    $totalSteps = $baseSteps + $refinerSteps; // Important: Samplers must know total count
+    {
+        $baseSteps = $p['steps'] ?? 25; 
+        $refinerSteps = $p['refiner_steps'] ?? 10;
+        $totalSteps = $baseSteps + $refinerSteps;
+        $sharedSeed = rand(1, 999999999); // Use one integer for both samplers
 
-    return [
-        "4" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
-        "14" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['refiner_model'] ?? 'sd_xl_refiner_1.0.safetensors']],
-        
-        // Base Encoders
-        "6" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
-        "7" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["4", 1]]],
-        
-        // Refiner Encoders (using same prompts but refiner CLIP)
-        "15" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["14", 1]]],
-        "16" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["14", 1]]],
-        
-        "5" => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
+        return [
+            "4" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['model']]],
+            "14" => ["class_type" => "CheckpointLoaderSimple", "inputs" => ["ckpt_name" => $p['refiner_model'] ?? 'sd_xl_refiner_1.0.safetensors']],
+            
+            "6" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["4", 1]]],
+            "7" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["4", 1]]],
+            
+            "15" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['positive_prompt'], "clip" => ["14", 1]]],
+            "16" => ["class_type" => "CLIPTextEncode", "inputs" => ["text" => $p['negative_prompt'] ?? "", "clip" => ["14", 1]]],
+            
+            "5" => ["class_type" => "EmptyLatentImage", "inputs" => ["width" => $p['width'], "height" => $p['height'], "batch_size" => 1]],
 
-        // BASE SAMPLER: Run from 0 to 25
-        "3" => [
-            "class_type" => "KSampler",
-            "inputs" => [
-                "seed" => rand(1, 999999999),
-                // "steps" => $totalSteps,
-                "steps" => $totalSteps, // Total steps
-                
-                "cfg" => $p['cfg'] ?? 7,
-                "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
-                "scheduler" => "karras",
-                "denoise" => 1.0,
-                "model" => ["4", 0],
-                "positive" => ["6", 0],
-                "negative" => ["7", 0],
-                "latent_image" => ["5", 0],
-                "start_at_step" => 0,
-                "end_at_step" => $baseSteps, 
-                "return_with_leftover_noise" => "enable" // Keep noise for refiner
-            ]
-        ],
+            "3" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => $sharedSeed,
+                    "steps" => $totalSteps,
+                    "cfg" => $p['cfg'] ?? 7,
+                    "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
+                    "scheduler" => "karras",
+                    "denoise" => 1.0,
+                    "model" => ["4", 0],
+                    "positive" => ["6", 0],
+                    "negative" => ["7", 0],
+                    "latent_image" => ["5", 0],
+                    "start_at_step" => 0,
+                    "end_at_step" => $baseSteps, 
+                    "return_with_leftover_noise" => "enable" 
+                ]
+            ],
 
-        // REFINER SAMPLER: Start at 25, finish at end
-        "17" => [
-            "class_type" => "KSampler",
-            "inputs" => [
-                "seed" => ["3", 0], // Same seed
-                "steps" => $totalSteps,
-                "cfg" => $p['cfg'] ?? 7,
-                "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
-                "scheduler" => "karras",
-                "denoise" => 1.0, 
-                "model" => ["14", 0],
-                "positive" => ["15", 0],
-                "negative" => ["16", 0],
-                "latent_image" => ["3", 0], // LINK: Input is output of Base
-                // "start_at_step" => $baseSteps,
-                "start_at_step" => $baseSteps,
-                "end_at_step" => 10000,
-                "return_with_leftover_noise" => "disable"
-            ]
-        ],
+            "17" => [
+                "class_type" => "KSampler",
+                "inputs" => [
+                    "seed" => $sharedSeed, // Fixed: Pass integer variable, not a latent link
+                    "steps" => $totalSteps,
+                    "cfg" => $p['cfg'] ?? 7,
+                    "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
+                    "scheduler" => "karras",
+                    "denoise" => 1.0, 
+                    "model" => ["14", 0],
+                    "positive" => ["15", 0],
+                    "negative" => ["16", 0],
+                    "latent_image" => ["3", 0], 
+                    "start_at_step" => $baseSteps,
+                    "end_at_step" => 10000,
+                    "return_with_leftover_noise" => "disable"
+                ]
+            ],
 
-        "8" => ["class_type" => "VAEDecode", "inputs" => ["samples" => ["17", 0], "vae" => ["14", 2]]],
-        "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "SDXL_Chained", "images" => ["8", 0]]]
-    ];
-}
+            "8" => ["class_type" => "VAEDecode", "inputs" => ["samples" => ["17", 0], "vae" => ["14", 2]]],
+            "9" => ["class_type" => "SaveImage", "inputs" => ["filename_prefix" => "SDXL_Chained", "images" => ["8", 0]]]
+        ];
+    }
 
     /**
      * Base SD1.5 Workflow
