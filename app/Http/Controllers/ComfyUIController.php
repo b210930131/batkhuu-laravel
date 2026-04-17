@@ -238,8 +238,10 @@ class ComfyUIController extends Controller
                     "seed" => rand(1, 999999999),
                     "steps" => $p['steps'] ?? 20,
                     "cfg" => $p['cfg'] ?? 7,
-                    "sampler_name" => $p['sampler'] ?? 'euler',
-                    "scheduler" => "normal",
+                    // "sampler_name" => $p['sampler'] ?? 'euler',
+                    "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',  // Өөрчлөх
+                    // "scheduler" => "normal",
+                    "scheduler" => $p['scheduler'] ?? 'normal', // Scheduler тусад нь
                     "denoise" => 1,
                     "model" => ["4", 0],
                     "positive" => ["13", 0],

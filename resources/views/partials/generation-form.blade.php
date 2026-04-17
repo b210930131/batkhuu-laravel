@@ -352,13 +352,25 @@
                         <input type="number" id="height" value="512" min="256" max="1536" step="64">
                     </div>
                     <div class="param-item">
-                        <label>Sampler</label>
-                        <select id="sampler">
-                            <option value="euler">Euler</option>
-                            <option value="euler_ancestral">Euler Ancestral</option>
-                            <option value="dpmpp_2m" selected>DPM++ 2M</option>
-                            <option value="ddim">DDIM</option>
-                        </select>
+    <label>Sampler</label>
+    <select id="sampler">
+        <option value="euler">Euler</option>
+        <option value="euler_ancestral">Euler Ancestral</option>
+        <option value="dpmpp_2m" selected>DPM++ 2M</option>
+        <option value="dpmpp_2m_sde">DPM++ 2M SDE</option>
+        <option value="ddim">DDIM</option>
+    </select>
+</div>
+<div class="param-item">
+    <label>Scheduler</label>
+    <select id="scheduler">
+        <option value="normal">Normal</option>
+        <option value="karras" selected>Karras</option>
+        <option value="exponential">Exponential</option>
+        <option value="sgm_uniform">SGM Uniform</option>
+        <option value="simple">Simple</option>
+    </select>
+</div>
                     </div>
                 </div>
                 
