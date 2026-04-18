@@ -15,4 +15,8 @@ class GeneratedImage extends Model
         'width',
         'height',
     ];
+    public function user()
+    {
+    return $this->belongsTo(User::class);
+    }
 }

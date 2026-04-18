@@ -29,4 +29,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function generatedImages()
+    {
+        return $this->hasMany(GeneratedImage::class);
+    }
 }

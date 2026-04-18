@@ -42,6 +42,20 @@ Route::middleware(['auth'])->group(function () {
                 ->orderBy('created_at', 'desc')
                 ->get();
         });
+
+    // Зураг устгах route
+    Route::delete('/admin/gallery/delete/{id}', function ($id) {
+        $image = \App\Models\GeneratedImage::findOrFail($id);
+        
+        // Файлыг устгах
+        if ($image->file_name && file_exists(public_path('outputs/' . $image->file_name))) {
+            unlink(public_path('outputs/' . $image->file_name));
+        }
+        
+        $image->delete();
+        
+        return response()->json(['success' => true]);
+    })->name('admin.gallery.delete');
     /*
     |--------------------------------------------------------------------------
     | API / ComfyUI Proxy Routes

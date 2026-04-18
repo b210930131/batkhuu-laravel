@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Filament\Customer\Pages;
+
+use Filament\Pages\Page;
+use App\Models\GeneratedImage;
+
+class Gallery extends Page
+{
+    // protected static ?string $navigationIcon = 'heroicon-o-photo';
+    protected static ?string $navigationLabel = 'Миний зургууд';
+    // protected static ?string $title = 'Миний зургууд';
+    protected string $view = 'filament.customer.pages.gallery';
+    
+    // protected static ?string $navigationIcon = 'heroicon-o-photo';
+    // protected static ?string $navigationLabel = 'Бүх зургууд';
+    // protected static string $navigationGroup = 'Зураг';  // <-- static
+    protected static ?string $title = 'Бүх хэрэглэгчдийн зургууд';
+    // protected static string $view = 'filament.admin.pages.admin-gallery';
+    // View-д дамжуулах өгөгдөл
+    public function getViewData(): array
+    {
+        $images = GeneratedImage::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return [
+            'images' => $images,
+        ];
+    }
+}
