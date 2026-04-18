@@ -295,7 +295,9 @@
                         <div class="form-group">
                             <label class="form-label">🎭 Model</label>
                             <select id="model" class="form-select">
-                                <option value="dreamshaper_8.safetensors">Dreamshaper 8</option>
+                                
+                                <option value="sd_xl_base_1.0.safetensors">SDXL Base 1.0</option>
+                                <option value="dreamshaper_8.safetensors" selected>✨ Dreamshaper 8 (SD1.5, artistic, ControlNet ready)</option>
                                 <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5, FP16, low VRAM)</option>
                                 <option value="v1-5-pruned.safetensors">📦 v1-5-pruned (SD1.5, standard)</option>
                                 <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5, photorealistic)</option>
@@ -518,7 +520,7 @@
                         `<div class="gallery-placeholder">🎨</div>`
                     }
                     <div class="gallery-prompt">${img.positive_prompt?.substring(0, 50) || 'No prompt'}</div>
-                    <button class="delete-btn" onclick="deleteImage(${img.id})">🗑️</button>
+                    
                 </div>
             `).join('');
         } catch (error) {
