@@ -7,11 +7,14 @@ use App\Models\User;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms;
+use Filament\Forms\Form;
 
 class UserResource extends Resource
 {
      protected static ?string $model = User::class;
     // protected static ?string $navigationIcon = 'heroicon-o-users';
+     
     protected static ?string $navigationLabel = 'Хэрэглэгчид';
     // protected static ?string $navigationGroup = 'Хэрэглэгч';  // <-- static
     protected static ?string $pluralLabel = 'Хэрэглэгчид';

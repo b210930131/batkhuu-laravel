@@ -26,6 +26,7 @@ class CustomerPanelProvider extends PanelProvider
         return $panel
             ->id('customer')
             ->path('customer')
+            ->favicon(  asset('favicon.ico'))
             ->login()
             ->registration()
             ->profile()
