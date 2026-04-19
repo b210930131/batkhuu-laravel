@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Test Generation</title>
+</head>
+<body>
+    <h1>Test Generation</h1>
+    <button onclick="testGenerate()">Generate Test Image</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testGenerate() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = 'Generating...';
+        
+        const payload = {
+            client_id: 'test_' + Date.now(),
+            model: 'dreamshaper_8.safetensors',
+            positive_prompt: 'a beautiful landscape, mountains, lake, sunset, highly detailed, 8k',
+            negative_prompt: 'ugly, blurry, low quality',
+            steps: 20,
+            cfg: 7,
+            width: 512,
+            height: 512,
+            sampler: 'euler'
+        };
+        
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            console.log('Response:', data);
+            
+            if (data.success) {
+                resultDiv.innerHTML = `✅ Generation started! Prompt ID: ${data.prompt_id}<br>
+                Check the gallery in a few seconds...`;
+                
+                // Poll for results
+                pollForResults(data.prompt_id);
+            } else {
+                resultDiv.innerHTML = `❌ Error: ${data.error}`;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            resultDiv.innerHTML = `❌ Error: ${error.message}`;
+        }
+    }
+    
+    async function pollForResults(promptId) {
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const interval = setInterval(async () => {
+            attempts++;
+            
+            try {
+                const response = await fetch('/api/comfyui/history');
+                const history = await response.json();
+                
+                if (history[promptId]) {
+                    clearInterval(interval);
+                    console.log('Generation complete!', history[promptId]);
+                    document.getElementById('result').innerHTML += '<br>✅ Generation complete! Check the main gallery.';
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    document.getElementById('result').innerHTML += '<br>⚠️ Timeout - check gallery manually';
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 2000);
+    }
+    </script>
+</body>
+</html>

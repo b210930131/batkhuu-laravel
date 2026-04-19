@@ -1,0 +1,35 @@
+# .gitignore
+/vendor/
+/node_modules/
+/storage/
+/public/hot
+/public/storage
+
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.sqlite
+*.sqlite-journal
+
+.phpunit.result.cache
+/.phpunit.cache
+/.phpstorm.meta.php
+/_ide_helper.php
+/.php_cs.cache
+
+# IMPORTANT: Do NOT ignore lock files! They are crucial for deployment
+# /composer.lock  # Remove this - KEEP it!
+# /package-lock.json  # Remove this - KEEP it!
+# /yarn.lock  # Remove this - KEEP it!*.safetensors
+public/comfy-output/
+*.safetensors
+*.ckpt
+*.pth
+*.bin
+public/comfy-output/

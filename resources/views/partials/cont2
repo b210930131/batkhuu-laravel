@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midnight Pro · 2 Sections</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0b0a14 0%, #121121 100%);
+      font-family: 'Inter', sans-serif;
+      display: flex;           /* ✅ flex (inline-flex биш) */
+      flex-direction: column;  /* ✅ босоо чиглэлд байрлуулах */
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      gap: 2rem;              /* ✅ 2 section-ийн хооронд зай */
+    }
+
+    .demo-container {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .style-badge {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      color: #a59ef0;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .midnight-pro {
+      background: #0c0a1f;
+      border-radius: 32px;
+      padding: 3rem 2.5rem;
+      color: #ffffff;
+      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(157, 141, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(157, 141, 255, 0.15);
+      padding: 0.4rem 1rem;
+      border-radius: 60px;
+      font-size: 0.75rem;
+      color: #cbc3ff;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 20%, #cbc3ff 80%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .hero-description {
+      font-size: 1.1rem;
+      color: #cdc9f0;
+      margin-bottom: 2rem;
+    }
+
+    .cta-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-primary {
+      background: #6c5ce7;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.8rem;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(157, 141, 255, 0.6);
+      color: #e2dbff;
+      padding: 0.8rem 1.8rem;
+      border-radius: 50px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(157, 141, 255, 0.2);
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(145deg, #ffffff, #cfc6ff);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: #a59ad6;
+    }
+
+    @media (max-width: 680px) {
+      .hero-title { font-size: 2.2rem; }
+      .cta-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SECTION 1 -->
+<div class="demo-container">
+  <div class="style-badge">
+    <i class="fas fa-moon"></i> MIDNIGHT PRO — SECTION 1
+  </div>
+  <section class="midnight-pro">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fas fa-bolt"></i> <span>Midnight Pro • v2.0</span>
+      </div>
+      <h1 class="hero-title">Midnight Pro</h1>
+      <p class="hero-description">Dark mode ready · High contrast design for modern brands.</p>
+      <div class="cta-group">
+        <button class="btn-primary btn-1">Explore now <i class="fas fa-arrow-right"></i></button>
+        <button class="btn-outline btn-1">Watch demo</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item"><div class="stat-number">2.5k+</div><div class="stat-label">Projects</div></div>
+        <div class="stat-item"><div class="stat-number">100%</div><div class="stat-label">Dark optimized</div></div>
+        <div class="stat-item"><div class="stat-number">24/7</div><div class="stat-label">Support</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SECTION 2 -->
+<div class="demo-container">
+  <div class="style-badge">
+    <i class="fas fa-star"></i> MIDNIGHT PRO — SECTION 2
+  </div>
+  <section class="midnight-pro">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fas fa-gem"></i> <span>Midnight Pro • v2.0</span>
+      </div>
+      <h1 class="hero-title">Dark Hero</h1>
+      <p class="hero-description">Premium dark theme · Ready for production.</p>
+      <div class="cta-group">
+        <button class="btn-primary btn-2">Get started <i class="fas fa-arrow-right"></i></button>
+        <button class="btn-outline btn-2">Learn more</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item"><div class="stat-number">500+</div><div class="stat-label">Users</div></div>
+        <div class="stat-item"><div class="stat-number">4.9</div><div class="stat-label">Rating</div></div>
+        <div class="stat-item"><div class="stat-number">Free</div><div class="stat-label">Trial</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // ✅ Бүх button-ууд ажиллах болно
+  document.querySelectorAll('.btn-primary, .btn-outline').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '✨ Clicked! ✨';
+      btn.style.opacity = '0.8';
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.opacity = '1';
+      }, 800);
+    });
+  });
+</script>
+
+</body>
+</html>
+<link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
