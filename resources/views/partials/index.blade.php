@@ -165,7 +165,11 @@
             <h1 class="hero-title">Промт ашиглан зураг үүсгэх</h1>
             <p class="hero-description">Dark mode ready · High contrast design for modern brands.</p>
             <div class="cta-group">
-                <button class="btn-primary btn-1">Эхлүүлэх <i class="fas fa-arrow-right"></i></button>
+              <a href="{{ route('filament.customer.pages.ai-studio') }}" class="btn-primary btn-1">AI Зураг үүсгэх <i class="fas fa-arrow-right"></i></a>
+                <!-- <button class="btn-primary btn-1">Эхлүүлэх <i class="fas fa-arrow-right"></i></button> -->
+                <!-- <a href="{{ \App\Filament\Customer\Pages\ComfyUI::getUrl() }}">test</a> -->
+              
+
                 <button class="btn-outline btn-1">Watch demo</button>
             </div>
             <div class="hero-stats">
@@ -253,21 +257,25 @@
     </section>
     </div>
 </div>
-<script>
-  // ✅ Бүх button-ууд ажиллах болно
-  document.querySelectorAll('.btn-primary, .btn-outline').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const originalHTML = btn.innerHTML;
-      btn.innerHTML = 'Loading...';
-      btn.style.opacity = '0.8';
-      setTimeout(() => {
-        btn.innerHTML = originalHTML;
-        btn.style.opacity = '1';
-      }, 800);
-    });
-  });
-</script>
+        <script>
+          document.querySelectorAll('.btn-primary, .btn-outline').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              // Хэрэв энэ нь <a> таг бол preventDefault хийхгүй!
+              if (btn.tagName.toLowerCase() === 'a') {
+                return; 
+              }
+
+              e.preventDefault();
+              const originalHTML = btn.innerHTML;
+              btn.innerHTML = 'Loading...';
+              btn.style.opacity = '0.8';
+              setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.opacity = '1';
+              }, 800);
+            });
+          });
+        </script>
 
 </body>
 </html>

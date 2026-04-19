@@ -40,16 +40,31 @@ class User extends Authenticatable implements FilamentUser  // ✅ FilamentUser 
     }
 
     // ✅ Filament панелд хандах эрхийг шалгах
+    // public function canAccessPanel(Panel $panel): bool
+    //     {
+    //         if ($panel->getId() === 'admin') {
+    //             return $this->role === 'admin';
+    //         }
+            
+    //         if ($panel->getId() === 'customer') {
+    //             return $this->role === 'customer';
+    //         }
+            
+    //         return false;
+    //     }
+
     public function canAccessPanel(Panel $panel): bool
 {
+    // Админ панель руу зөвхөн админ орно
     if ($panel->getId() === 'admin') {
-        return $this->role === 'admin';
+        return $this->role === 'admin' && $this->is_active;
     }
-    
+
+    // Customer панель руу админ болон хэрэглэгч хоёулаа орж болно
     if ($panel->getId() === 'customer') {
-        return $this->role === 'customer';
+        return in_array($this->role, ['admin', 'customer']) && $this->is_active;
     }
-    
+
     return false;
 }
 }

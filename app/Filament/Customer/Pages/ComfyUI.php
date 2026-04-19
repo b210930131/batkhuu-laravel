@@ -7,9 +7,16 @@ use Filament\Pages\Page;
 class ComfyUI extends Page
 {
     // protected static ?string $navigationIcon = 'heroicon-o-sparkles';
+    protected static ?string $slug = 'ai-studio';
+    
     protected static ?string $navigationLabel = 'AI Зураг үүсгэх';
     protected static ?string $title = 'ComfyUI Studio';
     protected string $view = 'filament.customer.pages.comfy-ui';
+    // Энэ функц нь тухайн хуудас аль панельд харагдахыг заадаг
+    // public static function getRouteName(?Panel $panel = null): string
+    //     {
+    //         return 'filament.customer.pages.comfy-ui';
+    //     }
     
 }
 

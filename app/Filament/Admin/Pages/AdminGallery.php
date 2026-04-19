@@ -12,7 +12,7 @@ class AdminGallery extends Page
     // protected static ?string $navigationGroup = 'Зураг';  // <-- static
     protected static ?string $title = 'Бүх хэрэглэгчдийн зургууд';
     protected string $view = 'filament.admin.pages.admin-gallery';
-    
+    protected static ?string $slug = 'ai-studio';
     public $images;
     
     public function mount()

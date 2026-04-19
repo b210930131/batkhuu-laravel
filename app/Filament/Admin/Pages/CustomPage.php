@@ -15,4 +15,6 @@ class CustomPage extends Page
     // Non-static
     protected string $view = 'filament.admin.pages.custom-page';
     protected ?string $heading = 'Миний хуудас';
+
+    
 }
