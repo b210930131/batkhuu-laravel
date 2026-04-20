@@ -283,7 +283,7 @@
     }
 </style>
 
-<x-filament-panels::page>
+
     <div>
         <div class="comfy-container">
             <div class="grid-2">
@@ -337,7 +337,7 @@
                                 <input type="number" id="height" value="512" class="form-input">
                             </div>
                         </div>
-                        <div class="grid-2" style="gap: 15px;">
+                        <!-- <div class="grid-2" style="gap: 15px;">
                         <div class="form-group">
                             <label class="form-label">Steps</label>
                             <input type="number" id="steps" value="20" class="form-input">
@@ -353,7 +353,7 @@
                         <div class="form-group">
                             <label class="form-label">Height</label>
                             <input type="number" id="height" value="512" class="form-input">
-                        </div>
+                        </div> -->
                         <!-- SAMPLER НЭМЭХ -->
                         <div class="form-group">
                             <label class="form-label">🎛️ Sampler</label>
@@ -440,9 +440,9 @@
             </div>
         </div>
     </div>
-</x-filament-panels::page>
 
-@push('scripts')
+
+
 <script>
     const preprocessors = [
         { id: 'canny', name: 'Canny', icon: '🔲' },
@@ -454,242 +454,233 @@
         { id: 'seg', name: 'Seg', icon: '🏷️' },
         { id: 'normal', name: 'Normal', icon: '📐' }
     ];
-    
+
     let currentPreprocessor = 'canny';
     let currentControlImage = null;
     let isGenerating = false;
-    
-    function buildPreprocessors() {
-        const container = document.getElementById('preprocessorList');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        preprocessors.forEach(pp => {
-            const btn = document.createElement('button');
-            btn.className = `preprocessor-btn ${pp.id === currentPreprocessor ? 'preprocessor-btn-active' : ''}`;
-            btn.innerHTML = `${pp.icon} ${pp.name}`;
-            btn.onclick = () => {
-                document.querySelectorAll('.preprocessor-btn').forEach(b => {
-                    b.classList.remove('preprocessor-btn-active');
-                });
-                btn.classList.add('preprocessor-btn-active');
-                currentPreprocessor = pp.id;
-            };
-            container.appendChild(btn);
-        });
-    }
-    
-    function setupImageUpload() {
-        const input = document.getElementById('controlImageInput');
-        const preview = document.getElementById('controlPreview');
-        const dot = document.getElementById('controlnetDot');
-        
-        input?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    currentControlImage = ev.target.result;
-                    preview.innerHTML = `<img src="${currentControlImage}">`;
-                    if (dot) dot.style.background = '#10b981';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                currentControlImage = null;
-                preview.innerHTML = '<span style="color: #cbd5e1; font-size: 10px;">No preview</span>';
-                if (dot) dot.style.background = '#ef4444';
-            }
-        });
-    }
-    
+
     async function refreshGallery() {
         const galleryDiv = document.getElementById('images');
+        if (!galleryDiv) return;
+
         try {
-            const response = await fetch('/api/images');
+            const response = await fetch('/admin/api/images', {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gallery HTTP ${response.status}`);
+            }
+
             const images = await response.json();
-            
+
             if (!images || images.length === 0) {
-                galleryDiv.innerHTML = '<div style="text-align: center; grid-column: span 2; color: #9ca3af;">No images yet</div>';
+                galleryDiv.innerHTML = `
+                    <div style="text-align:center; grid-column: span 2; color:#9ca3af;">
+                        No images yet
+                    </div>
+                `;
                 return;
             }
-            
+
             galleryDiv.innerHTML = images.map(img => `
                 <div class="gallery-item">
-                    ${img.file_name ? 
-                        `<img src="/outputs/${img.file_name}" class="gallery-img" onclick="window.open(this.src)">` :
-                        `<div class="gallery-placeholder">🎨</div>`
+                    ${img.file_name
+                        ? `<img src="/outputs/${img.file_name}" class="gallery-img" onclick="window.open(this.src,'_blank')">`
+                        : `<div class="gallery-placeholder">🎨</div>`
                     }
-                    <div class="gallery-prompt">${img.positive_prompt?.substring(0, 50) || 'No prompt'}</div>
-                    
+
+                    <button class="delete-btn" onclick="deleteImage(${img.id})">Delete</button>
+
+                    <div style="padding:6px; font-size:11px;">
+                        <b>User:</b> ${img.user_id}<br>
+                        <b>Model:</b> ${img.model_used ?? '-'}<br>
+                        <b>Size:</b> ${img.width ?? '-'} x ${img.height ?? '-'}
+                    </div>
+
+                    <div class="gallery-prompt">
+                        ${img.positive_prompt?.substring(0, 60) || 'No prompt'}
+                    </div>
                 </div>
             `).join('');
         } catch (error) {
             console.error('Gallery error:', error);
         }
     }
-    
+
     async function deleteImage(id) {
         if (!confirm('Устгахдаа итгэлтэй байна уу?')) return;
-        
+
         try {
-            const response = await fetch(`/gallery/delete/${id}`, {
+            const response = await fetch(`/admin/gallery/delete/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json'
                 }
             });
-            if (response.ok) {
+
+            const data = await response.json();
+            if (data.success) {
                 refreshGallery();
             }
         } catch (error) {
             console.error('Delete error:', error);
         }
     }
-    
+
     async function pollForResults(promptId) {
         let attempts = 0;
-        const maxAttempts = 30;
-        
+
         const interval = setInterval(async () => {
             attempts++;
-            console.log(`Polling attempt ${attempts}`);
-            
+
             try {
-                const response = await fetch('/api/comfyui/history');
-                const history = await response.json();
-                
+                const res = await fetch('/api/comfyui/history', {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!res.ok) {
+                    throw new Error(`History HTTP ${res.status}`);
+                }
+
+                const history = await res.json();
+
                 if (history[promptId]) {
                     clearInterval(interval);
-                    
-                    const outputs = history[promptId].outputs;
+
                     let fileName = null;
-                    
+                    const outputs = history[promptId].outputs || {};
+
                     for (const nodeId in outputs) {
-                        if (outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+                        if (outputs[nodeId].images?.length) {
                             fileName = outputs[nodeId].images[0].filename;
                             break;
                         }
                     }
-                    
+
                     if (fileName) {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                         await fetch('/api/images/complete', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({
                                 prompt_id: promptId,
                                 file_name: fileName
                             })
                         });
+
                         refreshGallery();
                     }
                 }
-                
-                if (attempts >= maxAttempts) {
+
+                if (attempts > 30) {
                     clearInterval(interval);
                 }
-            } catch (error) {
-                console.error('Polling error:', error);
+            } catch (e) {
+                console.error('Polling error:', e);
             }
         }, 2000);
     }
-    
+
     async function generate() {
+        console.log('Generate clicked');
+
         if (isGenerating) return;
         isGenerating = true;
-        
+
         const btn = document.getElementById('generateBtn');
-        const statusDiv = document.getElementById('status');
-        
-        btn.disabled = true;
-        btn.textContent = '🎨 Processing...';
-        statusDiv.innerHTML = '⏳ Generating...';
-        statusDiv.className = 'status status-generating';
-        
+        const status = document.getElementById('status');
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+        }
+
+        if (status) {
+            status.innerHTML = '⏳ Generating...';
+            status.className = 'status status-generating';
+        }
+
         const payload = {
-            model: document.getElementById('model').value,
-            positive_prompt: document.getElementById('positive_prompt').value,
-            negative_prompt: document.getElementById('negative_prompt').value,
-            steps: parseInt(document.getElementById('steps').value),
-            cfg: parseFloat(document.getElementById('cfg').value),
-            width: parseInt(document.getElementById('width').value),
-            height: parseInt(document.getElementById('height').value),
-            sampler: document.getElementById('sampler')?.value || 'euler',        // НЭМЭХ
-            scheduler: document.getElementById('scheduler')?.value || 'normal',  // НЭМЭХ
+            model: document.getElementById('model')?.value,
+            positive_prompt: document.getElementById('positive_prompt')?.value,
+            negative_prompt: document.getElementById('negative_prompt')?.value,
+            steps: parseInt(document.getElementById('steps')?.value || 20),
+            cfg: parseFloat(document.getElementById('cfg')?.value || 7),
+            width: parseInt(document.getElementById('width')?.value || 512),
+            height: parseInt(document.getElementById('height')?.value || 512),
+            sampler: document.getElementById('sampler')?.value || 'euler',
+            scheduler: document.getElementById('scheduler')?.value || 'normal',
             controlnet: currentControlImage ? {
                 enabled: true,
                 preprocessor: currentPreprocessor,
-                image_base64: currentControlImage,
-                strength: parseFloat(document.getElementById('cnStrength')?.value || 0.85)
+                image_base64: currentControlImage
             } : null
         };
-        
+
         try {
-            const response = await fetch('/api/generate', {
+            const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(payload)
             });
-            
-            const data = await response.json();
-            
+
+            const data = await res.json();
+            console.log('Generate response:', data);
+
             if (data.success) {
-                statusDiv.innerHTML = '✅ Generation started!';
-                statusDiv.className = 'status status-success';
+                if (status) {
+                    status.innerHTML = '✅ Started';
+                    status.className = 'status status-success';
+                }
                 pollForResults(data.prompt_id);
-                setTimeout(refreshGallery, 5000);
+                setTimeout(refreshGallery, 3000);
             } else {
-                throw new Error(data.error);
+                throw new Error(data.error || 'Generate failed');
             }
-        } catch (error) {
-            statusDiv.innerHTML = `❌ Error: ${error.message}`;
-            statusDiv.className = 'status status-error';
-        }
-        
-        isGenerating = false;
-        btn.disabled = false;
-        btn.textContent = '🚀 Generate';
-    }
-    
-    function setupSliders() {
-        const strength = document.getElementById('cnStrength');
-        if (strength) {
-            strength.addEventListener('input', () => {
-                document.getElementById('strengthVal').textContent = strength.value;
-            });
-        }
-        
-        const start = document.getElementById('cnStart');
-        if (start) {
-            start.addEventListener('input', () => {
-                document.getElementById('startVal').textContent = parseFloat(start.value).toFixed(2);
-            });
-        }
-        
-        const end = document.getElementById('cnEnd');
-        if (end) {
-            end.addEventListener('input', () => {
-                document.getElementById('endVal').textContent = parseFloat(end.value).toFixed(2);
-            });
+        } catch (e) {
+            console.error('Generate error:', e);
+
+            if (status) {
+                status.innerHTML = `❌ ${e.message}`;
+                status.className = 'status status-error';
+            }
+        } finally {
+            isGenerating = false;
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Generate';
+            }
         }
     }
-    
+
     document.addEventListener('DOMContentLoaded', () => {
-        buildPreprocessors();
-        setupImageUpload();
-        setupSliders();
+        console.log('Admin page loaded');
+
         refreshGallery();
-        
-        document.getElementById('generateBtn')?.addEventListener('click', generate);
-        document.getElementById('refreshGalleryBtn')?.addEventListener('click', refreshGallery);
-        
+
+        const generateBtn = document.getElementById('generateBtn');
+        const refreshBtn = document.getElementById('refreshGalleryBtn');
+
+        if (generateBtn) {
+            generateBtn.addEventListener('click', generate);
+        } else {
+            console.error('generateBtn not found');
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshGallery);
+        }
+
         setInterval(refreshGallery, 10000);
     });
 </script>
-@endpush

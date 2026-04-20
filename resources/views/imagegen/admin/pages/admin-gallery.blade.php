@@ -1,7 +1,7 @@
-<x-filament-panels::page>
+
     <div>
         <div class="space-y-6">
-            <x-filament::card>
+            
                 <x-slot name="heading">🖼️ Бүх хэрэглэгчдийн зургууд</x-slot>
                 
                 @if($this->images && $this->images->count() > 0)
@@ -43,7 +43,6 @@
                         🎨 Зураг байхгүй байна.
                     </div>
                 @endif
-            </x-filament::card>
+            
         </div>
     </div>
-</x-filament-panels::page>

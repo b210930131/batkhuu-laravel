@@ -165,9 +165,9 @@
             <h1 class="hero-title">Промт ашиглан зураг үүсгэх</h1>
             <p class="hero-description">Dark mode ready · High contrast design for modern brands.</p>
             <div class="cta-group">
-              <a href="{{ route('filament.customer.pages.ai-studio') }}" class="btn-primary btn-1">AI Зураг үүсгэх <i class="fas fa-arrow-right"></i></a>
-                <!-- <button class="btn-primary btn-1">Эхлүүлэх <i class="fas fa-arrow-right"></i></button> -->
-                <!-- <a href="{{ \App\Filament\Customer\Pages\ComfyUI::getUrl() }}">test</a> -->
+                <a href="{{ route('admin.ai-studio') }}" class="btn-primary btn-1">
+                    Admin AI Studio <i class="fas fa-arrow-right"></i>
+                </a>
               
 
                 <button class="btn-outline btn-1">Watch demo</button>

@@ -634,8 +634,10 @@ public function finalizeImage(Request $request)
 
         if ($image) {
             $image->update([
-                'file_name' => $validated['file_name']
-            ]);
+            'file_name' => $validated['file_name'],
+            'subfolder' => $request->input('subfolder', ''),
+            'type' => $request->input('type', 'output'),
+        ]);
             
             Log::info('Image record updated successfully', ['id' => $image->id]);
             return response()->json(['success' => true]);
@@ -676,7 +678,22 @@ public function getUserImages()
 
     return response()->json($images);
 }
+public function adminAiStudio()
+{
+    return view('imagegen.admin.pages.admin');
+}
 
+public function customerAiStudio()
+{
+    return view('imagegen.customer.pages.customer');
+}
 // app/Http/Controllers/ComfyUIController.php
+public function getAllImages()
+{
+    $images = \App\Models\GeneratedImage::with('user')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
+    return response()->json($images);
+}
 }

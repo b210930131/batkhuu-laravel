@@ -283,7 +283,7 @@
     }
 </style>
 
-<x-filament-panels::page>
+
     <div>
         <div class="comfy-container">
             <div class="grid-2">
@@ -440,7 +440,7 @@
             </div>
         </div>
     </div>
-</x-filament-panels::page>
+
 
 @push('scripts')
 <script>

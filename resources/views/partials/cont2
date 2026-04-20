@@ -1,3 +1,6 @@
+          <!-- <a href="{{ route('filament.customer.pages.ai-studio') }}" class="btn-primary btn-1">AI Зураг үүсгэх <i class="fas fa-arrow-right"></i></a> -->
+                <!-- <button class="btn-primary btn-1">Эхлүүлэх <i class="fas fa-arrow-right"></i></button> -->
+                <!-- <a href="{{ \App\Filament\Customer\Pages\ComfyUI::getUrl() }}">test</a> -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
