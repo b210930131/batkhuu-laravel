@@ -696,4 +696,55 @@ public function getAllImages()
 
     return response()->json($images);
 }
+public function deleteCustomerImage($id)
+{
+    $image = \App\Models\GeneratedImage::where('user_id', auth()->id())->findOrFail($id);
+
+    $relativePath = trim(($image->subfolder ? $image->subfolder . '/' : '') . $image->file_name, '/');
+
+    $publicFile = public_path('outputs/' . $relativePath);
+    if ($image->file_name && file_exists($publicFile)) {
+        unlink($publicFile);
+    }
+
+    $comfyOutputDir = env('COMFYUI_OUTPUT_DIR', '/home/batkhuu/ComfyUI/output');
+    $comfyFile = $comfyOutputDir . '/' . $relativePath;
+
+    if ($image->file_name && file_exists($comfyFile)) {
+        unlink($comfyFile);
+    }
+
+    $image->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Image deleted successfully'
+    ]);
+}
+public function deleteImage($id)
+{
+    $image = \App\Models\GeneratedImage::findOrFail($id);
+
+    $relativePath = trim(($image->subfolder ? $image->subfolder . '/' : '') . $image->file_name, '/');
+
+    $publicFile = public_path('outputs/' . $relativePath);
+    if ($image->file_name && file_exists($publicFile)) {
+        unlink($publicFile);
+    }
+
+    $comfyOutputDir = env('COMFYUI_OUTPUT_DIR', '/home/batkhuu/ComfyUI/output');
+    $comfyFile = $comfyOutputDir . '/' . $relativePath;
+
+    if ($image->file_name && file_exists($comfyFile)) {
+        unlink($comfyFile);
+    }
+
+    $image->delete();
+
+    return response()->json(['success' => true]);
+}
+public function adminGallery()
+{
+    return view('imagegen.admin.pages.admin-gallery');
+}
 }

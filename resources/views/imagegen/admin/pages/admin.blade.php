@@ -1,363 +1,142 @@
-<style>
-    /* Main container */
-    .comfy-container {
-        padding: 20px;
-        background: #f5f5f5;
-        border-radius: 12px;
-    }
-    
-    .comfy-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .card-header {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #e5e7eb;
-        color: #374151;
-    }
-    
-    .form-group {
-        margin-bottom: 15px;
-    }
-    
-    .form-label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #374151;
-    }
-    
-    .form-input, .form-select, .form-textarea {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 14px;
-        background: white;
-    }
-    
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        outline: none;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
-    }
-    
-    .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    
-    .btn-primary {
-        background: #6366f1;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    
-    .btn-primary:hover {
-        background: #4f46e5;
-    }
-    
-    .btn-secondary {
-        background: #e5e7eb;
-        color: #374151;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    
-    .btn-secondary:hover {
-        background: #d1d5db;
-    }
-    
-    .button-group {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-    
-    .status {
-        margin-top: 15px;
-        padding: 10px;
-        border-radius: 8px;
-        font-size: 14px;
-    }
-    
-    .status-ready {
-        background: #f3f4f6;
-        color: #374151;
-    }
-    
-    .status-generating {
-        background: #fef3c7;
-        color: #92400e;
-    }
-    
-    .status-success {
-        background: #d1fae5;
-        color: #065f46;
-    }
-    
-    .status-error {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-    
-    .preprocessor-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    
-    .preprocessor-btn {
-        background: white;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        padding: 10px;
-        text-align: center;
-        cursor: pointer;
-        font-size: 12px;
-        transition: all 0.2s;
-    }
-    
-    .preprocessor-btn:hover {
-        border-color: #6366f1;
-        background: #eef2ff;
-    }
-    
-    .preprocessor-btn-active {
-        background: #6366f1;
-        color: white;
-        border-color: #6366f1;
-    }
-    
-    .gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-    
-    .gallery-item {
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #e5e7eb;
-        position: relative;
-    }
-    
-    .gallery-img {
-        width: 100%;
-        height: 130px;
-        object-fit: cover;
-        cursor: pointer;
-    }
-    
-    .gallery-placeholder {
-        width: 100%;
-        height: 130px;
-        background: #f3f4f6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 30px;
-    }
-    
-    .gallery-prompt {
-        padding: 8px;
-        font-size: 11px;
-        color: #6b7280;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .delete-btn {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #ef4444;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 4px 8px;
-        cursor: pointer;
-        font-size: 11px;
-    }
-    
-    .delete-btn:hover {
-        background: #dc2626;
-    }
-    
-    .upload-area {
-        background: #f8fafc;
-        border: 2px dashed #e2e8f0;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    
-    .image-preview {
-        margin-top: 10px;
-        border-radius: 8px;
-        overflow: hidden;
-        background: white;
-        min-height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .image-preview img {
-        max-width: 100%;
-        max-height: 100px;
-        object-fit: cover;
-    }
-    
-    .range-group {
-        margin-bottom: 15px;
-    }
-    
-    .range-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-    }
-    
-    .range-label {
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    
-    .range-value {
-        font-weight: bold;
-        color: #6366f1;
-    }
-    
-    input[type="range"] {
-        width: 100%;
-        accent-color: #6366f1;
-    }
-    
-    .flex-row {
-        display: flex;
-        gap: 12px;
-    }
-    
-    .flex-1 {
-        flex: 1;
-    }
-    
-    .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #ef4444;
-        transition: background 0.3s;
-    }
-    
-    @media (max-width: 768px) {
-        .grid-2, .gallery-grid {
-            grid-template-columns: 1fr;
-        }
-        .preprocessor-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-</style>
+@extends('imagegen.admin.layouts.app')
 
+@section('title', 'Admin Studio')
+@section('page_title', 'Admin Studio')
+@section('page_subtitle', 'Generate images, use ControlNet, and manage all outputs')
 
-    <div>
-        <div class="comfy-container">
-            <div class="grid-2">
-                <!-- LEFT PANEL -->
-                <div>
-                    <div class="comfy-card">
-                        <div class="card-header">⚙️ Model & Prompt Configuration</div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">🎭 Model</label>
-                            <select id="model" class="form-select">
-                                
-                                <option value="sd_xl_base_1.0.safetensors">SDXL Base 1.0</option>
-                                <option value="dreamshaper_8.safetensors" selected>✨ Dreamshaper 8 (SD1.5, artistic, ControlNet ready)</option>
-                                <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5, FP16, low VRAM)</option>
-                                <option value="v1-5-pruned.safetensors">📦 v1-5-pruned (SD1.5, standard)</option>
-                                <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5, photorealistic)</option>
-                                <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (high quality, 1024x1024)</option>
-                                <option value="sd_xl_refiner_1.0.safetensors">🔧 SDXL Refiner 1.0 (detail enhancement)</option>
-                                <option value="flux1-dev-fp8.safetensors">⚡ Flux Dev FP8 (experimental, high VRAM)</option>
-                                <option value="sd3.5_large_fp8_scaled.safetensors">🌀 SD3.5 Large FP8 (requires >8GB VRAM)</option>
-                                <option value="qwen_image_2512_fp8_e4m3fn.safetensors">🖼️ Qwen Image 2.5 (experimental)</option>
-                            </select>
+@section('content')
+<div class="space-y-8">
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 px-8 py-8 text-white shadow-2xl">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.25),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_28%)]"></div>
+
+        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-slate-100">
+                    ADMIN AI STUDIO
+                </div>
+                <h1 class="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
+                    Full Generation Control Center
+                </h1>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                    Full model selection, ControlNet preprocessing, and gallery management from one admin page.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                    <div class="text-xs uppercase tracking-wider text-slate-300">Access</div>
+                    <div class="mt-2 text-xl font-bold">Admin</div>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                    <div class="text-xs uppercase tracking-wider text-slate-300">Features</div>
+                    <div class="mt-2 text-xl font-bold">Full Studio</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.95fr)]">
+        <!-- LEFT SIDE -->
+        <div class="space-y-6">
+            <!-- Main Configuration -->
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold">Model & Prompt Configuration</h2>
+                            <p class="mt-1 text-sm text-slate-300">Full admin generation workspace</p>
                         </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">✨ Positive Prompt</label>
-                            <textarea id="positive_prompt" rows="3" class="form-textarea">masterpiece, high quality, detailed</textarea>
+                        <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-slate-100">
+                            Admin Studio
+                        </span>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="space-y-2">
+                        <label for="model" class="block text-sm font-medium text-slate-700">Model Selection</label>
+                        <select id="model"
+                            class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                            <option value="dreamshaper_8.safetensors" selected>✨ Dreamshaper 8 (SD1.5, artistic, ControlNet ready)</option>
+                            <option value="v1-5-pruned-emaonly-fp16.safetensors">📦 v1-5-pruned-emaonly-fp16 (SD1.5, FP16, low VRAM)</option>
+                            <option value="v1-5-pruned.safetensors">📦 v1-5-pruned (SD1.5, standard)</option>
+                            <option value="realisticVisionV60B1_v51HyperVAE.safetensors">🎭 Realistic Vision V6.0 (SD1.5, photorealistic)</option>
+                            <option value="sd_xl_base_1.0.safetensors">🎨 SDXL Base 1.0 (high quality, 1024x1024)</option>
+                            <option value="sd_xl_refiner_1.0.safetensors">🔧 SDXL Refiner 1.0 (detail enhancement)</option>
+                            <option value="flux1-dev-fp8.safetensors">⚡ Flux Dev FP8 (experimental, high VRAM)</option>
+                            <option value="sd3.5_large_fp8_scaled.safetensors">🌀 SD3.5 Large FP8 (requires >8GB VRAM)</option>
+                            <option value="qwen_image_2512_fp8_e4m3fn.safetensors">🖼️ Qwen Image 2.5 (experimental)</option>
+                        </select>
+
+                        <div id="vram-warning"
+                            class="hidden rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            ⚠️ Warning: Selected model may exceed VRAM
                         </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">❌ Negative Prompt</label>
-                            <textarea id="negative_prompt" rows="2" class="form-textarea">worst quality, low quality, blurry</textarea>
-                        </div>
-                        
-                        <div class="grid-2" style="gap: 15px;">
-                            <div class="form-group">
-                                <label class="form-label">Steps</label>
-                                <input type="number" id="steps" value="20" class="form-input">
+                    </div>
+
+                    <div id="refinerGroup" class="hidden rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label for="refiner_model" class="block text-sm font-medium text-slate-700">SDXL Refiner Model</label>
+                                <select id="refiner_model"
+                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                    <option value="sd_xl_refiner_1.0.safetensors">SDXL Refiner 1.0</option>
+                                </select>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">CFG</label>
-                                <input type="number" id="cfg" value="7" step="0.5" class="form-input">
+
+                            <div class="space-y-2">
+                                <label for="refiner_steps" class="block text-sm font-medium text-slate-700">Refiner Steps</label>
+                                <input type="number" id="refiner_steps" value="15" min="1" max="100"
+                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Width</label>
-                                <input type="number" id="width" value="512" class="form-input">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Height</label>
-                                <input type="number" id="height" value="512" class="form-input">
-                            </div>
+
+                            <div id="resolutionHint" class="hidden rounded-xl bg-white px-4 py-3 text-xs text-slate-600"></div>
                         </div>
-                        <!-- <div class="grid-2" style="gap: 15px;">
-                        <div class="form-group">
-                            <label class="form-label">Steps</label>
-                            <input type="number" id="steps" value="20" class="form-input">
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5">
+                        <div class="space-y-2">
+                            <label for="positive_prompt" class="block text-sm font-medium text-slate-700">Positive Prompt</label>
+                            <textarea id="positive_prompt" rows="4"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">masterpiece, architectural photography, modern building exterior, golden hour lighting, luxury facade, high-quality rendering, sharp focus, volumetric lighting</textarea>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">CFG</label>
-                            <input type="number" id="cfg" value="7" step="0.5" class="form-input">
+
+                        <div class="space-y-2">
+                            <label for="negative_prompt" class="block text-sm font-medium text-slate-700">Negative Prompt</label>
+                            <textarea id="negative_prompt" rows="3"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">worst quality, low quality, blurry, distorted, cartoonish, ugly</textarea>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Width</label>
-                            <input type="number" id="width" value="512" class="form-input">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                        <div class="space-y-2">
+                            <label for="steps" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Steps</label>
+                            <input type="number" id="steps" value="20" min="1" max="100"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Height</label>
-                            <input type="number" id="height" value="512" class="form-input">
-                        </div> -->
-                        <!-- SAMPLER НЭМЭХ -->
-                        <div class="form-group">
-                            <label class="form-label">🎛️ Sampler</label>
-                            <select id="sampler" class="form-select">
+
+                        <div class="space-y-2">
+                            <label for="cfg" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">CFG Scale</label>
+                            <input type="number" id="cfg" value="7.0" step="0.5" min="1" max="20"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="width" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Width</label>
+                            <input type="number" id="width" value="512" min="256" max="1536" step="64"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="height" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Height</label>
+                            <input type="number" id="height" value="512" min="256" max="1536" step="64"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="sampler" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Sampler</label>
+                            <select id="sampler"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
                                 <option value="euler">Euler</option>
                                 <option value="euler_ancestral">Euler Ancestral</option>
                                 <option value="dpmpp_2m" selected>DPM++ 2M</option>
@@ -366,321 +145,787 @@
                                 <option value="uni_pc">Uni PC</option>
                             </select>
                         </div>
-                        <!-- SCHEDULER НЭМЭХ -->
-                        <div class="form-group">
-                            <label class="form-label">⚙️ Scheduler</label>
-                            <select id="scheduler" class="form-select">
+
+                        <div class="space-y-2">
+                            <label for="scheduler" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduler</label>
+                            <select id="scheduler"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
                                 <option value="normal">Normal</option>
                                 <option value="karras" selected>Karras</option>
                                 <option value="exponential">Exponential</option>
                                 <option value="sgm_uniform">SGM Uniform</option>
+                                <option value="simple">Simple</option>
                             </select>
                         </div>
                     </div>
-                        <div class="button-group">
-                            <button id="generateBtn" class="btn-primary">🚀 Generate</button>
-                            <button id="refreshGalleryBtn" class="btn-secondary">🔄 Refresh</button>
+
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+                        <div class="space-y-3">
+                            <label for="controlImageInput" class="block text-sm font-medium text-slate-700">Control Image</label>
+                            <input type="file" id="controlImageInput" accept="image/*"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700">
+                            <p class="text-xs text-slate-500">Upload an image to guide generation.</p>
+                            <div id="controlPreview" class="overflow-hidden rounded-2xl"></div>
                         </div>
-                        
-                        <div id="status" class="status status-ready">✅ Ready</div>
                     </div>
-                    
-                    <div class="comfy-card">
-                        <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
-                            <span>🎮 ControlNet Preprocessors</span>
-                            <div id="controlnetDot" class="dot"></div>
+
+                    <div class="flex flex-col gap-3 md:flex-row">
+                        <button id="generateBtn"
+                            class="inline-flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:from-indigo-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-70">
+                            🚀 Generate
+                        </button>
+
+                        <button id="refreshGalleryBtn"
+                            class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                            🔄 Refresh
+                        </button>
+
+                        <button id="interruptBtn"
+                            class="inline-flex items-center justify-center rounded-2xl bg-rose-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-600">
+                            ⏹️ Interrupt
+                        </button>
+                    </div>
+
+                    <div id="status"
+                        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                        ✅ Ready • ControlNet inactive
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preprocessors -->
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 text-white">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">ControlNet Preprocessors</h2>
+                        <div id="controlnetDot" class="h-3 w-3 rounded-full bg-rose-500"></div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="preprocessorList" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"></div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 text-white">
+                    <h2 class="text-lg font-semibold">Preprocessor Settings</h2>
+                </div>
+
+                <div id="preprocessorSettings" class="p-6">
+                    <div id="cannySettings" class="preprocessor-settings hidden space-y-5 rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">Canny Low Threshold</label>
+                                <span id="cannyLowVal" class="text-sm font-semibold text-indigo-600">50</span>
+                            </div>
+                            <input type="range" id="cannyLowThreshold" min="0" max="255" value="50" step="1" class="w-full accent-indigo-600">
                         </div>
-                        
-                        <div id="preprocessorList" class="preprocessor-grid"></div>
-                        
-                        <div class="upload-area">
-                            <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 10px;">📤 Upload Control Image</label>
-                            <input type="file" id="controlImageInput" accept="image/*" style="width: 100%; font-size: 11px;">
-                            <div id="controlPreview" class="image-preview">
-                                <span style="color: #cbd5e1; font-size: 10px;">No preview</span>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">Canny High Threshold</label>
+                                <span id="cannyHighVal" class="text-sm font-semibold text-indigo-600">150</span>
+                            </div>
+                            <input type="range" id="cannyHighThreshold" min="0" max="255" value="150" step="1" class="w-full accent-indigo-600">
+                        </div>
+                    </div>
+
+                    <div id="depthSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <label for="depthResolution" class="block text-sm font-medium text-slate-700">Depth Resolution</label>
+                            <select id="depthResolution" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                <option value="512">512</option>
+                                <option value="1024">1024</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="openposeSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-700">Detection Features</label>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <label class="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                                    <input type="checkbox" id="openposeHands" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    Hands
+                                </label>
+                                <label class="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                                    <input type="checkbox" id="openposeBody" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    Body
+                                </label>
+                                <label class="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                                    <input type="checkbox" id="openposeFace" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    Face
+                                </label>
                             </div>
                         </div>
-                        
-                        <div class="range-group">
-                            <div class="range-header">
-                                <label class="range-label">💪 Strength</label>
-                                <span id="strengthVal" class="range-value">0.85</span>
+                    </div>
+
+                    <div id="mlsdSettings" class="preprocessor-settings hidden space-y-5 rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">Score Threshold</label>
+                                <span id="mlsdScoreVal" class="text-sm font-semibold text-indigo-600">0.10</span>
                             </div>
-                            <input type="range" id="cnStrength" min="0" max="2" step="0.01" value="0.85">
+                            <input type="range" id="mlsdScoreThr" min="0" max="1" value="0.1" step="0.01" class="w-full accent-indigo-600">
                         </div>
-                        
-                        <div class="flex-row">
-                            <div class="flex-1">
-                                <div class="range-header">
-                                    <label class="range-label">▶️ Start %</label>
-                                    <span id="startVal" class="range-value">0.00</span>
-                                </div>
-                                <input type="range" id="cnStart" min="0" max="1" value="0" step="0.01">
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">Distance Threshold</label>
+                                <span id="mlsdDistVal" class="text-sm font-semibold text-indigo-600">0.10</span>
                             </div>
-                            <div class="flex-1">
-                                <div class="range-header">
-                                    <label class="range-label">⏹️ End %</label>
-                                    <span id="endVal" class="range-value">1.00</span>
-                                </div>
-                                <input type="range" id="cnEnd" min="0" max="1" value="1" step="0.01">
-                            </div>
+                            <input type="range" id="mlsdDistThr" min="0" max="0.5" value="0.1" step="0.01" class="w-full accent-indigo-600">
+                        </div>
+                    </div>
+
+                    <div id="scribbleSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <label for="scribbleMode" class="block text-sm font-medium text-slate-700">Scribble Mode</label>
+                            <select id="scribbleMode" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                <option value="hed">HED</option>
+                                <option value="pidi">PIDI</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="hedSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <label for="hedResolution" class="block text-sm font-medium text-slate-700">HED Resolution</label>
+                            <select id="hedResolution" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                <option value="512">512</option>
+                                <option value="1024">1024</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="segSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <label for="segResolution" class="block text-sm font-medium text-slate-700">SEG Resolution</label>
+                            <select id="segResolution" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                <option value="512">512</option>
+                                <option value="1024">1024</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="normalSettings" class="preprocessor-settings hidden rounded-2xl bg-slate-50 p-5">
+                        <div class="space-y-2">
+                            <label for="normalResolution" class="block text-sm font-medium text-slate-700">Normal Resolution</label>
+                            <select id="normalResolution" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                                <option value="512">512</option>
+                                <option value="1024">1024</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-                
-                <!-- RIGHT PANEL -->
-                <div>
-                    <div class="comfy-card">
-                        <div class="card-header">🖼️ Generated Images</div>
-                        <div id="images" class="gallery-grid">
-                            <div style="text-align: center; grid-column: span 2; color: #9ca3af;">No images yet</div>
+            </section>
+
+            <!-- Strength -->
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 text-white">
+                    <h2 class="text-lg font-semibold">ControlNet Strength</h2>
+                </div>
+
+                <div class="space-y-5 p-6">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm font-medium text-slate-700">Strength</label>
+                            <span id="strengthVal" class="text-sm font-semibold text-indigo-600">0.85</span>
+                        </div>
+                        <input type="range" id="cnStrength" min="0" max="2" step="0.01" value="0.85" class="w-full accent-indigo-600">
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">Start %</label>
+                                <span id="startVal" class="text-sm font-semibold text-indigo-600">0.00</span>
+                            </div>
+                            <input type="range" id="cnStart" min="0" max="1" value="0" step="0.01" class="w-full accent-indigo-600">
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-slate-700">End %</label>
+                                <span id="endVal" class="text-sm font-semibold text-indigo-600">1.00</span>
+                            </div>
+                            <input type="range" id="cnEnd" min="0" max="1" value="1" step="0.01" class="w-full accent-indigo-600">
                         </div>
                     </div>
+
+                    <div id="controlnetStatus" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-center gap-3">
+                            <div id="controlnetStatusDot" class="h-3 w-3 rounded-full bg-rose-500"></div>
+                            <span id="controlnetText" class="text-sm font-medium text-slate-800">No control image uploaded</span>
+                        </div>
+                        <p id="controlnetDetails" class="mt-3 text-xs leading-5 text-slate-500">
+                            Upload an image and select a preprocessor to enable ControlNet.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
-    </div>
 
+        <!-- RIGHT SIDE -->
+        <div class="space-y-6">
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">Generated Images</h2>
+                        <span id="adminCount" class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-slate-100">
+                            0 images
+                        </span>
+                    </div>
+                </div>
 
-
-<script>
-    const preprocessors = [
-        { id: 'canny', name: 'Canny', icon: '🔲' },
-        { id: 'depth', name: 'Depth', icon: '🗺️' },
-        { id: 'openpose', name: 'Pose', icon: '🧍' },
-        { id: 'scribble', name: 'Sketch', icon: '✏️' },
-        { id: 'mlsd', name: 'MLSD', icon: '📐' },
-        { id: 'hed', name: 'HED', icon: '🎨' },
-        { id: 'seg', name: 'Seg', icon: '🏷️' },
-        { id: 'normal', name: 'Normal', icon: '📐' }
-    ];
-
-    let currentPreprocessor = 'canny';
-    let currentControlImage = null;
-    let isGenerating = false;
-
-    async function refreshGallery() {
-        const galleryDiv = document.getElementById('images');
-        if (!galleryDiv) return;
-
-        try {
-            const response = await fetch('/admin/api/images', {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Gallery HTTP ${response.status}`);
-            }
-
-            const images = await response.json();
-
-            if (!images || images.length === 0) {
-                galleryDiv.innerHTML = `
-                    <div style="text-align:center; grid-column: span 2; color:#9ca3af;">
+                <div id="images" class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">
                         No images yet
                     </div>
-                `;
-                return;
-            }
-
-            galleryDiv.innerHTML = images.map(img => `
-                <div class="gallery-item">
-                    ${img.file_name
-                        ? `<img src="/outputs/${img.file_name}" class="gallery-img" onclick="window.open(this.src,'_blank')">`
-                        : `<div class="gallery-placeholder">🎨</div>`
-                    }
-
-                    <button class="delete-btn" onclick="deleteImage(${img.id})">Delete</button>
-
-                    <div style="padding:6px; font-size:11px;">
-                        <b>User:</b> ${img.user_id}<br>
-                        <b>Model:</b> ${img.model_used ?? '-'}<br>
-                        <b>Size:</b> ${img.width ?? '-'} x ${img.height ?? '-'}
-                    </div>
-
-                    <div class="gallery-prompt">
-                        ${img.positive_prompt?.substring(0, 60) || 'No prompt'}
-                    </div>
                 </div>
-            `).join('');
-        } catch (error) {
-            console.error('Gallery error:', error);
-        }
+            </section>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+let currentPreprocessor = 'canny';
+let currentControlImage = null;
+let isGenerating = false;
+
+const preprocessors = [
+    { id: 'canny', name: 'Canny', icon: '🔲' },
+    { id: 'depth', name: 'Depth', icon: '🗺️' },
+    { id: 'openpose', name: 'OpenPose', icon: '🧍' },
+    { id: 'mlsd', name: 'MLSD', icon: '📐' },
+    { id: 'scribble', name: 'Scribble', icon: '✏️' },
+    { id: 'hed', name: 'HED', icon: '🎨' },
+    { id: 'seg', name: 'SEG', icon: '🏷️' },
+    { id: 'normal', name: 'Normal', icon: '📐' }
+];
+
+function getPreprocessorName(id) {
+    const names = {
+        canny: 'Canny Edge',
+        depth: 'Depth Map',
+        openpose: 'OpenPose',
+        mlsd: 'MLSD',
+        scribble: 'Scribble',
+        hed: 'HED',
+        seg: 'Segmentation',
+        normal: 'Normal Map'
+    };
+    return names[id] || id;
+}
+
+function setStatus(message, type = 'success') {
+    const statusDiv = document.getElementById('status');
+    if (!statusDiv) return;
+
+    const styles = {
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        warning: 'border-amber-200 bg-amber-50 text-amber-700',
+        error: 'border-rose-200 bg-rose-50 text-rose-700',
+        info: 'border-indigo-200 bg-indigo-50 text-indigo-700'
+    };
+
+    statusDiv.className = `rounded-2xl border px-4 py-3 text-sm font-medium ${styles[type] || styles.success}`;
+    statusDiv.textContent = message;
+}
+
+function setButtonLoading(btn, loading, loadingText = 'Processing...') {
+    if (!btn) return;
+
+    if (loading) {
+        btn.dataset.originalText = btn.innerHTML;
+        btn.innerHTML = loadingText;
+        btn.disabled = true;
+        btn.classList.add('opacity-70', 'cursor-not-allowed');
+    } else {
+        btn.innerHTML = btn.dataset.originalText || 'Submit';
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
     }
+}
 
-    async function deleteImage(id) {
-        if (!confirm('Устгахдаа итгэлтэй байна уу?')) return;
+function updateControlNetStatus() {
+    const dot = document.getElementById('controlnetStatusDot');
+    const text = document.getElementById('controlnetText');
+    const details = document.getElementById('controlnetDetails');
+    const topDot = document.getElementById('controlnetDot');
+    const hasImage = currentControlImage !== null;
 
-        try {
-            const response = await fetch(`/admin/gallery/delete/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                    'Accept': 'application/json'
-                }
-            });
+    if (!dot || !text || !details || !topDot) return;
 
-            const data = await response.json();
-            if (data.success) {
-                refreshGallery();
-            }
-        } catch (error) {
-            console.error('Delete error:', error);
-        }
+    if (hasImage) {
+        dot.className = 'h-3 w-3 rounded-full bg-emerald-500';
+        topDot.className = 'h-3 w-3 rounded-full bg-emerald-500';
+        text.textContent = `ControlNet Active: ${getPreprocessorName(currentPreprocessor)}`;
+        details.textContent = `Using ${getPreprocessorName(currentPreprocessor)} to guide generation. Strength: ${document.getElementById('cnStrength')?.value || 0.85}`;
+    } else {
+        dot.className = 'h-3 w-3 rounded-full bg-rose-500';
+        topDot.className = 'h-3 w-3 rounded-full bg-rose-500';
+        text.textContent = 'ControlNet Inactive';
+        details.textContent = 'Upload an image and select a preprocessor to enable ControlNet.';
     }
+}
 
-    async function pollForResults(promptId) {
-        let attempts = 0;
+function buildPreprocessorUI() {
+    const container = document.getElementById('preprocessorList');
+    if (!container) return;
 
-        const interval = setInterval(async () => {
-            attempts++;
-
-            try {
-                const res = await fetch('/api/comfyui/history', {
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                if (!res.ok) {
-                    throw new Error(`History HTTP ${res.status}`);
-                }
-
-                const history = await res.json();
-
-                if (history[promptId]) {
-                    clearInterval(interval);
-
-                    let fileName = null;
-                    const outputs = history[promptId].outputs || {};
-
-                    for (const nodeId in outputs) {
-                        if (outputs[nodeId].images?.length) {
-                            fileName = outputs[nodeId].images[0].filename;
-                            break;
-                        }
-                    }
-
-                    if (fileName) {
-                        await fetch('/api/images/complete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                prompt_id: promptId,
-                                file_name: fileName
-                            })
-                        });
-
-                        refreshGallery();
-                    }
-                }
-
-                if (attempts > 30) {
-                    clearInterval(interval);
-                }
-            } catch (e) {
-                console.error('Polling error:', e);
-            }
-        }, 2000);
-    }
-
-    async function generate() {
-        console.log('Generate clicked');
-
-        if (isGenerating) return;
-        isGenerating = true;
-
-        const btn = document.getElementById('generateBtn');
-        const status = document.getElementById('status');
-
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'Processing...';
-        }
-
-        if (status) {
-            status.innerHTML = '⏳ Generating...';
-            status.className = 'status status-generating';
-        }
-
-        const payload = {
-            model: document.getElementById('model')?.value,
-            positive_prompt: document.getElementById('positive_prompt')?.value,
-            negative_prompt: document.getElementById('negative_prompt')?.value,
-            steps: parseInt(document.getElementById('steps')?.value || 20),
-            cfg: parseFloat(document.getElementById('cfg')?.value || 7),
-            width: parseInt(document.getElementById('width')?.value || 512),
-            height: parseInt(document.getElementById('height')?.value || 512),
-            sampler: document.getElementById('sampler')?.value || 'euler',
-            scheduler: document.getElementById('scheduler')?.value || 'normal',
-            controlnet: currentControlImage ? {
-                enabled: true,
-                preprocessor: currentPreprocessor,
-                image_base64: currentControlImage
-            } : null
-        };
-
-        try {
-            const res = await fetch('/api/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-            console.log('Generate response:', data);
-
-            if (data.success) {
-                if (status) {
-                    status.innerHTML = '✅ Started';
-                    status.className = 'status status-success';
-                }
-                pollForResults(data.prompt_id);
-                setTimeout(refreshGallery, 3000);
-            } else {
-                throw new Error(data.error || 'Generate failed');
-            }
-        } catch (e) {
-            console.error('Generate error:', e);
-
-            if (status) {
-                status.innerHTML = `❌ ${e.message}`;
-                status.className = 'status status-error';
-            }
-        } finally {
-            isGenerating = false;
-
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'Generate';
-            }
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('Admin page loaded');
-
-        refreshGallery();
-
-        const generateBtn = document.getElementById('generateBtn');
-        const refreshBtn = document.getElementById('refreshGalleryBtn');
-
-        if (generateBtn) {
-            generateBtn.addEventListener('click', generate);
-        } else {
-            console.error('generateBtn not found');
-        }
-
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', refreshGallery);
-        }
-
-        setInterval(refreshGallery, 10000);
+    container.innerHTML = '';
+    preprocessors.forEach(pp => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-id', pp.id);
+        btn.className = `preprocessor-btn rounded-2xl border px-4 py-4 text-left transition ${
+            pp.id === currentPreprocessor
+                ? 'border-indigo-500 bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
+        }`;
+        btn.innerHTML = `
+            <div class="text-xl">${pp.icon}</div>
+            <div class="mt-2 text-sm font-semibold">${pp.name}</div>
+        `;
+        btn.onclick = () => selectPreprocessor(pp.id);
+        container.appendChild(btn);
     });
+}
+
+function selectPreprocessor(id) {
+    currentPreprocessor = id;
+
+    document.querySelectorAll('.preprocessor-btn').forEach(btn => {
+        if (btn.getAttribute('data-id') === id) {
+            btn.className = 'preprocessor-btn rounded-2xl border border-indigo-500 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-4 text-left text-white shadow-md transition';
+        } else {
+            btn.className = 'preprocessor-btn rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50';
+        }
+    });
+
+    document.querySelectorAll('.preprocessor-settings').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+
+    const selectedPanel = document.getElementById(`${id}Settings`);
+    if (selectedPanel) selectedPanel.classList.remove('hidden');
+
+    updateControlNetStatus();
+}
+
+function setupImageUpload() {
+    const input = document.getElementById('controlImageInput');
+    const preview = document.getElementById('controlPreview');
+
+    if (!input) return;
+
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+
+        if (!file) {
+            currentControlImage = null;
+            if (preview) preview.innerHTML = '';
+            updateControlNetStatus();
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Image size should be less than 10MB');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentControlImage = event.target.result;
+            if (preview) {
+                preview.innerHTML = `
+                    <img src="${currentControlImage}" class="max-h-64 w-full rounded-2xl border border-slate-200 object-contain bg-white p-2">
+                `;
+            }
+            updateControlNetStatus();
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function setupSliders() {
+    const bindValue = (id, outId, format = (v) => v) => {
+        const el = document.getElementById(id);
+        const out = document.getElementById(outId);
+        if (!el || !out) return;
+        el.addEventListener('input', () => {
+            out.textContent = format(el.value);
+            if (id === 'cnStrength') updateControlNetStatus();
+        });
+    };
+
+    bindValue('cnStrength', 'strengthVal');
+    bindValue('cnStart', 'startVal', (v) => parseFloat(v).toFixed(2));
+    bindValue('cnEnd', 'endVal', (v) => parseFloat(v).toFixed(2));
+    bindValue('cannyLowThreshold', 'cannyLowVal');
+    bindValue('cannyHighThreshold', 'cannyHighVal');
+    bindValue('mlsdScoreThr', 'mlsdScoreVal', (v) => parseFloat(v).toFixed(2));
+    bindValue('mlsdDistThr', 'mlsdDistVal', (v) => parseFloat(v).toFixed(2));
+}
+
+function setupSDXLSupport() {
+    const modelSelect = document.getElementById('model');
+    const refinerGroup = document.getElementById('refinerGroup');
+    if (!modelSelect || !refinerGroup) return;
+
+    modelSelect.addEventListener('change', () => {
+        const val = modelSelect.value.toLowerCase();
+        const isSDXL = val.includes('sdxl') || val.includes('sd_xl');
+
+        if (isSDXL) {
+            refinerGroup.classList.remove('hidden');
+            document.getElementById('width').value = 1024;
+            document.getElementById('height').value = 1024;
+        } else {
+            refinerGroup.classList.add('hidden');
+        }
+    });
+}
+
+async function refreshGallery() {
+    const gallery = document.getElementById('images');
+    const count = document.getElementById('adminCount');
+    if (!gallery) return;
+
+    try {
+        const response = await fetch('/admin/api/images', { headers: { 'Accept': 'application/json' } });
+        const images = await response.json();
+
+        if (!response.ok) throw new Error(`Gallery HTTP ${response.status}`);
+        if (count) count.textContent = `${images.length} images`;
+
+        if (!images.length) {
+            gallery.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">No images yet</div>`;
+            return;
+        }
+
+        gallery.innerHTML = images.map(img => {
+            const imageUrl = img.file_name
+                ? `/api/comfyui/view?filename=${encodeURIComponent(img.file_name)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`
+                : '';
+
+            return `
+                <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    ${img.file_name
+                        ? `<img src="${imageUrl}" class="aspect-square w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.03]" onclick="window.open('${imageUrl}','_blank')">`
+                        : `<div class="flex aspect-square items-center justify-center bg-slate-100 text-3xl text-slate-400">🎨</div>`
+                    }
+                    <div class="space-y-2 p-3">
+                        <div class="truncate text-sm font-semibold text-slate-800">User: ${img.user?.name ?? img.user_id}</div>
+                        <div class="text-xs text-slate-500">${img.model_used ?? '-'}</div>
+                        <button type="button" onclick="deleteImage(${img.id})" class="w-full rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error(error);
+        gallery.innerHTML = `<div class="col-span-full rounded-2xl border border-rose-200 bg-rose-50 px-6 py-16 text-center text-rose-600">Failed to load gallery: ${error.message}</div>`;
+    }
+}
+
+async function deleteImage(id) {
+    if (!confirm('Устгахдаа итгэлтэй байна уу?')) return;
+
+    try {
+        const response = await fetch(`/admin/gallery/delete/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) refreshGallery();
+    } catch (error) {
+        console.error('Delete error:', error);
+    }
+}
+
+async function pollForResults(promptId) {
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    const interval = setInterval(async () => {
+        attempts++;
+
+        try {
+            const response = await fetch('/api/comfyui/history');
+            const history = await response.json();
+
+            if (history[promptId]) {
+                clearInterval(interval);
+
+                const outputs = history[promptId].outputs;
+                let fileName = null;
+                let subfolder = '';
+                let type = 'output';
+
+                for (const nodeId in outputs) {
+                    if (outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+                        fileName = outputs[nodeId].images[0].filename;
+                        subfolder = outputs[nodeId].images[0].subfolder || '';
+                        type = outputs[nodeId].images[0].type || 'output';
+                        break;
+                    }
+                }
+
+                if (fileName) {
+                    await fetch('/api/images/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            prompt_id: promptId,
+                            file_name: fileName,
+                            subfolder: subfolder,
+                            type: type
+                        })
+                    });
+                }
+
+                await refreshGallery();
+                setStatus('✅ Generation complete! Image added to gallery.', 'success');
+
+                isGenerating = false;
+                setButtonLoading(document.getElementById('generateBtn'), false);
+                setTimeout(() => setStatus('✅ Ready • ControlNet ready', 'success'), 2500);
+            }
+
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                isGenerating = false;
+                setButtonLoading(document.getElementById('generateBtn'), false);
+                setStatus('❌ Timeout: Image taking too long.', 'error');
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 2000);
+}
+
+async function loadModels() {
+    const modelSelect = document.getElementById('model');
+    if (!modelSelect) return;
+
+    modelSelect.innerHTML = '<option value="">Loading models...</option>';
+
+    try {
+        const response = await fetch('/api/comfyui/object-info');
+        const data = await response.json();
+
+        if (data && data.checkpoints && data.checkpoints.length > 0) {
+            const checkpoints = data.checkpoints;
+            const sd15Models = [];
+            const sdxlModels = [];
+            const fluxModels = [];
+            const otherModels = [];
+
+            checkpoints.forEach(model => {
+                const lowerModel = model.toLowerCase();
+                if (lowerModel.includes('sdxl') || lowerModel.includes('xl')) sdxlModels.push(model);
+                else if (lowerModel.includes('flux')) fluxModels.push(model);
+                else if (lowerModel.includes('sd15') || lowerModel.includes('v1-5') || lowerModel.includes('dreamshaper') || lowerModel.includes('realistic')) sd15Models.push(model);
+                else otherModels.push(model);
+            });
+
+            let optionsHtml = '';
+            if (sd15Models.length) {
+                optionsHtml += '<optgroup label="SD1.5 Models">';
+                sd15Models.forEach(model => {
+                    const selected = model === 'dreamshaper_8.safetensors' ? 'selected' : '';
+                    optionsHtml += `<option value="${model}" ${selected}>${model}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            if (sdxlModels.length) {
+                optionsHtml += '<optgroup label="SDXL Models">';
+                sdxlModels.forEach(model => optionsHtml += `<option value="${model}">${model}</option>`);
+                optionsHtml += '</optgroup>';
+            }
+            if (fluxModels.length) {
+                optionsHtml += '<optgroup label="Flux Models">';
+                fluxModels.forEach(model => optionsHtml += `<option value="${model}">${model}</option>`);
+                optionsHtml += '</optgroup>';
+            }
+            if (otherModels.length) {
+                optionsHtml += '<optgroup label="Other Models">';
+                otherModels.forEach(model => optionsHtml += `<option value="${model}">${model}</option>`);
+                optionsHtml += '</optgroup>';
+            }
+
+            modelSelect.innerHTML = optionsHtml;
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+    } catch (error) {
+        console.error('Failed to load models:', error);
+    }
+}
+
+async function loadRefinerModels() {
+    const refinerSelect = document.getElementById('refiner_model');
+    if (!refinerSelect) return;
+
+    try {
+        const response = await fetch('/api/comfyui/object-info');
+        const data = await response.json();
+
+        if (data && data.checkpoints && data.checkpoints.length > 0) {
+            const refiners = data.checkpoints.filter(model =>
+                model.toLowerCase().includes('refiner') ||
+                (model.toLowerCase().includes('sdxl') && model.toLowerCase().includes('refiner'))
+            );
+
+            if (refiners.length > 0) {
+                refinerSelect.innerHTML = refiners.map(model => `<option value="${model}">${model}</option>`).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load refiner models:', error);
+    }
+}
+
+async function generate() {
+    if (isGenerating) {
+        alert('Generation already in progress. Please wait.');
+        return;
+    }
+
+    isGenerating = true;
+    const btn = document.getElementById('generateBtn');
+    setButtonLoading(btn, true, '🎨 Processing...');
+    setStatus('⏳ Initializing generation...', 'warning');
+
+    const selectedModel = document.getElementById('model').value;
+    const isSDXL = selectedModel.toLowerCase().includes('sdxl');
+    const hasControlImage = currentControlImage !== null;
+
+    const payload = {
+        client_id: 'client_' + Date.now(),
+        model: selectedModel,
+        positive_prompt: document.getElementById('positive_prompt').value,
+        negative_prompt: document.getElementById('negative_prompt').value,
+        steps: parseInt(document.getElementById('steps').value),
+        cfg: parseFloat(document.getElementById('cfg').value),
+        width: parseInt(document.getElementById('width').value),
+        height: parseInt(document.getElementById('height').value),
+        sampler: document.getElementById('sampler').value,
+        scheduler: document.getElementById('scheduler').value,
+        refiner_model: isSDXL ? document.getElementById('refiner_model')?.value : null,
+        refiner_steps: isSDXL ? parseInt(document.getElementById('refiner_steps')?.value || 15) : null,
+        controlnet: hasControlImage ? {
+            enabled: true,
+            preprocessor: currentPreprocessor,
+            image_base64: currentControlImage,
+            strength: parseFloat(document.getElementById('cnStrength')?.value || 0.85),
+            start_percent: parseFloat(document.getElementById('cnStart')?.value || 0),
+            end_percent: parseFloat(document.getElementById('cnEnd')?.value || 1)
+        } : null
+    };
+
+    if (payload.controlnet) {
+        switch (currentPreprocessor) {
+            case 'canny':
+                payload.controlnet.canny_low = parseInt(document.getElementById('cannyLowThreshold')?.value || 50) / 255;
+                payload.controlnet.canny_high = parseInt(document.getElementById('cannyHighThreshold')?.value || 150) / 255;
+                break;
+            case 'depth':
+                payload.controlnet.depth_resolution = parseInt(document.getElementById('depthResolution')?.value || 512);
+                break;
+            case 'openpose':
+                payload.controlnet.openpose_hands = document.getElementById('openposeHands')?.checked ? 'enable' : 'disable';
+                payload.controlnet.openpose_body = document.getElementById('openposeBody')?.checked ? 'enable' : 'disable';
+                payload.controlnet.openpose_face = document.getElementById('openposeFace')?.checked ? 'enable' : 'disable';
+                break;
+            case 'mlsd':
+                payload.controlnet.mlsd_score_thr = parseFloat(document.getElementById('mlsdScoreThr')?.value || 0.1);
+                payload.controlnet.mlsd_dist_thr = parseFloat(document.getElementById('mlsdDistThr')?.value || 0.1);
+                break;
+            case 'scribble':
+                payload.controlnet.scribble_mode = document.getElementById('scribbleMode')?.value || 'hed';
+                break;
+            case 'hed':
+                payload.controlnet.hed_resolution = parseInt(document.getElementById('hedResolution')?.value || 512);
+                break;
+            case 'seg':
+                payload.controlnet.seg_resolution = parseInt(document.getElementById('segResolution')?.value || 512);
+                break;
+            case 'normal':
+                payload.controlnet.normal_resolution = parseInt(document.getElementById('normalResolution')?.value || 512);
+                break;
+        }
+    }
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.error || 'Generation failed');
+
+        setStatus('✅ Generation started! Processing...', 'info');
+        pollForResults(data.prompt_id);
+    } catch (error) {
+        console.error('Generation error:', error);
+        isGenerating = false;
+        setButtonLoading(btn, false);
+        setStatus(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+async function interruptGeneration() {
+    try {
+        await fetch('/api/comfyui/interrupt', { method: 'POST' });
+        isGenerating = false;
+        setButtonLoading(document.getElementById('generateBtn'), false);
+        setStatus('⏹️ Generation interrupted', 'warning');
+    } catch (error) {
+        console.error('Interrupt error:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadModels();
+    loadRefinerModels();
+    buildPreprocessorUI();
+    setupImageUpload();
+    setupSliders();
+    setupSDXLSupport();
+    selectPreprocessor('canny');
+    refreshGallery();
+
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) generateBtn.onclick = generate;
+
+    const refreshBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshBtn) refreshBtn.onclick = refreshGallery;
+
+    const interruptBtn = document.getElementById('interruptBtn');
+    if (interruptBtn) interruptBtn.onclick = interruptGeneration;
+
+    setInterval(refreshGallery, 10000);
+});
 </script>
+@endpush
+@endsection

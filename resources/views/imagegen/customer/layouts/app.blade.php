@@ -56,6 +56,3 @@
     @stack('scripts')
 </body>
 </html>
-
-<!-- route('customer.dashboard')
-route('customer.gallery') -->

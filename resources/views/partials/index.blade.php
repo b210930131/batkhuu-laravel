@@ -1,281 +1,243 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Midnight Pro · 2 Sections</title>
-  <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-<link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<div class="space-y-8">
+    <!-- Top hero -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white shadow-2xl">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_30%)]"></div>
 
-    body {
-      background: linear-gradient(145deg, #0b0a14 0%, #121121 100%);
-      font-family: 'Inter', sans-serif;
-      display: grid;           /* ✅ flex (inline-flex биш) */
-      flex-direction: column;  /* ✅ босоо чиглэлд байрлуулах */
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 2rem;
-      gap: 2rem;              /* ✅ 2 section-ийн хооронд зай */
-    }
+        <div class="relative px-8 py-10 md:px-10 md:py-12">
+            <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-100 backdrop-blur">
+                        AI IMAGE GENERATION PLATFORM
+                    </div>
 
-    .demo-container {
-      max-width: 1280px;
-      width: 100%;
-      margin: 0 auto;
-         padding: 0 1rem 2rem 2rem;
-    }
+                    <h1 class="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
+                        Онлайн AI платформын
+                        <span class="bg-gradient-to-r from-white to-indigo-300 bg-clip-text text-transparent">
+                            удирдлагын самбар
+                        </span>
+                    </h1>
 
-    .style-badge {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      font-size: 0.8rem;
-      letter-spacing: 1px;
-      color: #a59ef0;
-      text-transform: uppercase;
-      font-weight: 500;
-    }
+                    <p class="mt-4 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+                        Stable Diffusion, ControlNet, customer gallery болон admin studio хэсгүүд рүү
+                        хурдан шилжих, турших, удирдах зориулалттай нүүр хуудас.
+                    </p>
 
-    .midnight-pro {
-      background: #0c0a1f;
-      border-radius: 32px;
-      padding: 3rem 2.5rem;
-      color: #ffffff;
-      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(157, 141, 255, 0.2);
-      position: relative;
-      overflow: hidden;
-    }
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <a href="{{ route('customer.dashboard') }}"
+                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-700">
+                            Customer Studio
+                        </a>
 
-    .hero-content {
-      max-width: 700px;
-      margin: 0 auto;
-      text-align: center;
-    }
+                        <a href="{{ route('customer.gallery') }}"
+                           class="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                            My Gallery
+                        </a>
 
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(157, 141, 255, 0.15);
-      padding: 0.4rem 1rem;
-      border-radius: 60px;
-      font-size: 0.75rem;
-      color: #cbc3ff;
-      margin-bottom: 1.5rem;
-    }
+                        <a href="{{ route('admin.ai-studio') }}"
+                           class="inline-flex items-center justify-center rounded-xl border border-indigo-300/20 bg-slate-800/70 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-700">
+                            Admin AI Studio
+                        </a>
+                    </div>
+                </div>
 
-    .hero-title {
-      font-size: 3.5rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #ffffff 20%, #cbc3ff 80%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      margin-bottom: 1rem;
-    }
+                <div class="grid w-full max-w-xl grid-cols-2 gap-4">
+                    <div class="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                        <div class="text-xs font-medium uppercase tracking-wider text-slate-300">Models</div>
+                        <div class="mt-3 text-3xl font-bold">SD + CN</div>
+                        <div class="mt-1 text-sm text-slate-300">Prompt + Control image workflow</div>
+                    </div>
 
-    .hero-description {
-      font-size: 1.1rem;
-      color: #cdc9f0;
-      margin-bottom: 2rem;
-    }
+                    <div class="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                        <div class="text-xs font-medium uppercase tracking-wider text-slate-300">Role Access</div>
+                        <div class="mt-3 text-3xl font-bold">Admin / User</div>
+                        <div class="mt-1 text-sm text-slate-300">Separate pages and permissions</div>
+                    </div>
 
-    .cta-group {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-    }
+                    <div class="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                        <div class="text-xs font-medium uppercase tracking-wider text-slate-300">Gallery</div>
+                        <div class="mt-3 text-3xl font-bold">Private</div>
+                        <div class="mt-1 text-sm text-slate-300">Each customer sees own images</div>
+                    </div>
 
-    .btn-primary {
-      background: #6c5ce7;
-      color: white;
-      border: none;
-      padding: 0.8rem 1.8rem;
-      border-radius: 50px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid rgba(157, 141, 255, 0.6);
-      color: #e2dbff;
-      padding: 0.8rem 1.8rem;
-      border-radius: 50px;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hero-stats {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2rem;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(157, 141, 255, 0.2);
-    }
-
-    .stat-number {
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: linear-gradient(145deg, #ffffff, #cfc6ff);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .stat-label {
-      font-size: 0.7rem;
-      color: #a59ad6;
-    }
-
-    @media (max-width: 680px) {
-      .hero-title { font-size: 2.2rem; }
-      .cta-group { flex-direction: column; }
-    }
-  </style>
-</head>
-<body>
-<div class="inline-flex">
-<!-- SECTION 1 -->
-    <div class="demo-container">
-        <div class="style-badge">
-            <i class="fas fa-moon"></i> STABLE DIFFUSION 1.5
-        </div>
-        <section class="midnight-pro">
-            <div class="hero-content">
-            <div class="hero-badge">
-                <i class="fas fa-bolt"></i> <span>Diffusion models</span>
+                    <div class="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                        <div class="text-xs font-medium uppercase tracking-wider text-slate-300">UI</div>
+                        <div class="mt-3 text-3xl font-bold">Tailwind</div>
+                        <div class="mt-1 text-sm text-slate-300">Clean spacing and alignment</div>
+                    </div>
+                </div>
             </div>
-            <h1 class="hero-title">Промт ашиглан зураг үүсгэх</h1>
-            <p class="hero-description">Dark mode ready · High contrast design for modern brands.</p>
-            <div class="cta-group">
-                <a href="{{ route('admin.ai-studio') }}" class="btn-primary btn-1">
-                    Admin AI Studio <i class="fas fa-arrow-right"></i>
-                </a>
-              
-
-                <button class="btn-outline btn-1">Watch demo</button>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item"><div class="stat-number">2.5k+</div><div class="stat-label">Projects</div></div>
-                <div class="stat-item"><div class="stat-number">100%</div><div class="stat-label">Dark optimized</div></div>
-                <div class="stat-item"><div class="stat-number">24/7</div><div class="stat-label">Support</div></div>
-            </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- SECTION 2 -->
-    <div class="demo-container">
-            <div class="style-badge">
-                <i class="fas fa-star"></i> ControlNet
-            </div>
-        <section class="midnight-pro">
-            <div class="hero-content">
-            <div class="hero-badge">
-                <i class="fas fa-gem"></i> <span>Canny Depth</span>
-            </div>
-            <h1 class="hero-title">AI Зураг шинэчлэх</h1>
-            <p class="hero-description">Premium dark theme · Ready for production.</p>
-            <div class="cta-group">
-                <button class="btn-primary btn-2">Эхлүүлэх <i class="fas fa-arrow-right"></i></button>
-                <button class="btn-outline btn-2">Дэлгэрэнгүй</button>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item"><div class="stat-number">500+</div><div class="stat-label">Users</div></div>
-                <div class="stat-item"><div class="stat-number">4.9</div><div class="stat-label">Rating</div></div>
-                <div class="stat-item"><div class="stat-number">Free</div><div class="stat-label">Trial</div></div>
-            </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- <div class="demo-container">
-            <div class="style-badge">
-                <i class="fas fa-star"></i> MIDNIGHT PRO — SECTION 2
-            </div>
-        <section class="midnight-pro">
-            <div class="hero-content">
-            <div class="hero-badge">
-                <i class="fas fa-gem"></i> <span>Midnight Pro • v2.0</span>
-            </div>
-            <h1 class="hero-title">Dark Hero</h1>
-            <p class="hero-description">Premium dark theme · Ready for production.</p>
-            <div class="cta-group">
-                <button class="btn-primary btn-3">Get started <i class="fas fa-arrow-right"></i></button>
-                <button class="btn-outline btn-3">Learn more</button>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item"><div class="stat-number">500+</div><div class="stat-label">Users</div></div>
-                <div class="stat-item"><div class="stat-number">4.9</div><div class="stat-label">Rating</div></div>
-                <div class="stat-item"><div class="stat-number">Free</div><div class="stat-label">Trial</div></div>
-            </div>
-            </div>
-        </section>
-    </div> -->
-
-    
-    </div>
-    <div class="demo-container">
-    <div class="style-badge">
-        <i class="fas fa-star"></i> Талбар 3
-    </div>
-    <section class="midnight-pro">
-        <div class="hero-content">
-        <div class="hero-badge">
-            <i class="fas fa-gem"></i> <span>25 pages design</span>
-        </div>
-        <h1 class="hero-title">Веб Хуудсуудын дизайн</h1>
-        <p class="hero-description">Жишээ загварууд</p>
-        <div class="cta-group">
-            <!-- <button class="btn-primary btn-3">Get started <i class="fas fa-arrow-right"></i></button> -->
-             <button class="btn-primary btn-3" onclick="window.location.href='{{ route('twenty') }}'">Орж үзэх <i class="fas fa-arrow-right"></i></button>
-            <button class="btn-outline btn-3">Илүү мэдээлэл</button>
-        </div>
-        <div class="hero-stats">
-            <div class="stat-item"><div class="stat-number">500+</div><div class="stat-label">Users</div></div>
-            <div class="stat-item"><div class="stat-number">4.9</div><div class="stat-label">Rating</div></div>
-            <div class="stat-item"><div class="stat-number">Free</div><div class="stat-label">Trial</div></div>
-        </div>
         </div>
     </section>
-    </div>
+
+    <!-- Main cards -->
+    <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <!-- Card 1 -->
+        <article class="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="inline-flex w-fit items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+                Stable Diffusion
+            </div>
+
+            <h3 class="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+                Prompt ашиглан зураг үүсгэх
+            </h3>
+
+            <p class="mt-3 text-sm leading-6 text-slate-600">
+                Text prompt оруулж, generation pipeline ажиллуулж, customer panel дээрээс
+                үр дүнгээ хянах үндсэн хэсэг.
+            </p>
+
+            <div class="mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4 text-center">
+                <div>
+                    <div class="text-lg font-bold text-slate-900">2.5k+</div>
+                    <div class="text-xs text-slate-500">Projects</div>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900">Fast</div>
+                    <div class="text-xs text-slate-500">Workflow</div>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-slate-900">Live</div>
+                    <div class="text-xs text-slate-500">Generation</div>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-6 flex flex-wrap gap-3">
+                <a href="{{ route('customer.dashboard') }}"
+                   class="inline-flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                    Open Studio
+                </a>
+
+                <a href="{{ route('admin.ai-studio') }}"
+                   class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Admin
+                </a>
+            </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="inline-flex w-fit items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                ControlNet
+            </div>
+
+            <h3 class="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+                AI зураг шинэчлэх
+            </h3>
+
+            <p class="mt-3 text-sm leading-6 text-slate-600">
+                Canny, Depth болон бусад preprocessor ашиглан бүтэц хадгалсан generation хийж,
+                image-guided workflow ажиллуулна.
+            </p>
+
+            <div class="mt-6 space-y-3 rounded-2xl bg-slate-50 p-4">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-500">Canny</span>
+                    <span class="font-semibold text-slate-900">Enabled</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-500">Depth</span>
+                    <span class="font-semibold text-slate-900">Supported</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-500">Image Guide</span>
+                    <span class="font-semibold text-slate-900">Ready</span>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-6 flex flex-wrap gap-3">
+                <a href="{{ route('customer.dashboard') }}"
+                   class="inline-flex flex-1 items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    Start Editing
+                </a>
+
+                <a href="{{ route('customer.gallery') }}"
+                   class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Gallery
+                </a>
+            </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="inline-flex w-fit items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+                Web Pages
+            </div>
+
+            <h3 class="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+                Веб хуудсуудын дизайн
+            </h3>
+
+            <p class="mt-3 text-sm leading-6 text-slate-600">
+                UI жишээ, дизайны демо болон тусдаа хуудсууд руу орж турших хэсэг.
+            </p>
+
+            <div class="mt-6 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
+                <div class="text-sm font-medium text-slate-700">Preview Collection</div>
+                <div class="mt-2 text-3xl font-bold text-slate-900">25 pages</div>
+                <div class="mt-1 text-sm text-slate-500">Layout, cards, sections, examples</div>
+            </div>
+
+            <div class="mt-auto pt-6 flex flex-wrap gap-3">
+                <a href="{{ route('twenty') }}"
+                   class="inline-flex flex-1 items-center justify-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-700">
+                    Орж үзэх
+                </a>
+
+                <button type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    More Info
+                </button>
+            </div>
+        </article>
+    </section>
+
+    <!-- Bottom info -->
+    <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-slate-900">Quick Navigation</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-600">
+                Customer, gallery болон admin хуудсууд руу шууд шилжих холбоосууд.
+            </p>
+
+            <div class="mt-5 flex flex-wrap gap-3">
+                <a href="{{ route('dashboard') }}"
+                   class="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+                    Dashboard
+                </a>
+
+                <a href="{{ route('customer.dashboard') }}"
+                   class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700">
+                    Customer
+                </a>
+
+                <a href="{{ route('customer.gallery') }}"
+                   class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700">
+                    Gallery
+                </a>
+
+                <a href="{{ route('admin.ai-studio') }}"
+                   class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
+                    Admin
+                </a>
+            </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-slate-900">UI Notes</h3>
+            <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                <li class="flex items-start gap-3">
+                    <span class="mt-1 h-2 w-2 rounded-full bg-indigo-500"></span>
+                    Cards are equal-height using <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">flex h-full flex-col</code>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+                    Buttons are aligned using consistent padding and inline-flex
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="mt-1 h-2 w-2 rounded-full bg-violet-500"></span>
+                    Old fake loading script is removed; use real loading only on API actions
+                </li>
+            </ul>
+        </div>
+    </section>
 </div>
-        <script>
-          document.querySelectorAll('.btn-primary, .btn-outline').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              // Хэрэв энэ нь <a> таг бол preventDefault хийхгүй!
-              if (btn.tagName.toLowerCase() === 'a') {
-                return; 
-              }
-
-              e.preventDefault();
-              const originalHTML = btn.innerHTML;
-              btn.innerHTML = 'Loading...';
-              btn.style.opacity = '0.8';
-              setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.style.opacity = '1';
-              }, 800);
-            });
-          });
-        </script>
-
-</body>
-</html>
