@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use App\Services\PromptDictionaryService;
 
 class ComfyUIController extends Controller
 {
@@ -24,77 +25,138 @@ class ComfyUIController extends Controller
     /**
      * Main Generation Entry Point
      */
-    public function generate(Request $request)
-    {
-        Log::info('Generate request received', $request->all());
-        
-        try {
-            $validated = $request->validate([
-                'client_id' => 'nullable|string',
-                'model' => 'required|string',
-                'refiner_model' => 'nullable|string',
-                'positive_prompt' => 'required|string',
-                'negative_prompt' => 'nullable|string',
-                'steps' => 'integer|min:1|max:100',
-                'refiner_steps' => 'nullable|integer|min:1|max:100',
-                'cfg' => 'numeric|min:1|max:20',
-                'width' => 'integer|min:256|max:1536',
-                'height' => 'integer|min:256|max:1536',
-                'sampler' => 'string',
-                'controlnet' => 'nullable|array',
-                'controlnet.enabled' => 'boolean',
-                'controlnet.preprocessor' => 'nullable|string',
-                'controlnet.image_base64' => 'nullable|string',
-                'controlnet.strength' => 'nullable|numeric',
-            ]);
+    public function generate(Request $request, PromptDictionaryService $promptService)
+{
+    Log::info('Generate request received', $request->all());
+    
+    try {
+        $validated = $request->validate([
+            'client_id' => 'nullable|string',
+            'model' => 'required|string',
+            'refiner_model' => 'nullable|string',
+            'positive_prompt' => 'required|string',
+            'negative_prompt' => 'nullable|string',
+            'steps' => 'integer|min:1|max:100',
+            'refiner_steps' => 'nullable|integer|min:1|max:100',
+            'cfg' => 'numeric|min:1|max:20',
+            'width' => 'integer|min:256|max:1536',
+            'height' => 'integer|min:256|max:1536',
+            'sampler' => 'string',
+            'controlnet' => 'nullable|array',
+            'controlnet.enabled' => 'boolean',
+            'controlnet.preprocessor' => 'nullable|string',
+            'controlnet.image_base64' => 'nullable|string',
+            'controlnet.strength' => 'nullable|numeric',
+        ]);
 
-            $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
-            
-            // Workflow Selection Logic
-            $isSDXL = str_contains(strtolower($validated['model']), 'sdxl') || str_contains(strtolower($validated['model']), 'sd_xl');
-            $hasRefiner = !empty($validated['refiner_model']);
+        $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
 
-            if ($isSDXL || $hasRefiner) {
-                $workflow = $this->buildSDXLWorkflow($validated);
-            } elseif (!empty($validated['controlnet']['enabled'])) {
-                $workflow = $this->buildControlNetWorkflow($validated);
-            } else {
-                $workflow = $this->buildBaseWorkflow($validated);
-            }
+        // 🔥 1. ORIGINAL PROMPT хадгалж авна
+        $originalPrompt = $validated['positive_prompt'];
 
-            $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
-                'prompt' => $workflow,
-                'client_id' => $clientId,
-            ]);
+        // 🔥 2. CANONICAL PROMPT болгоно
+        $processed = $promptService->buildCanonicalPrompt($originalPrompt);
 
-            if ($response->failed()) {
-                throw new \Exception('ComfyUI Connection Failed: ' . $response->body());
-            }
+        // 🔥 3. PROMPT-уудыг overwrite хийнэ
+        $validated['positive_prompt'] = $processed['prompt'];
 
-            $responseData = $response->json();
-            if (!isset($responseData['prompt_id'])) {
-                throw new \Exception('ComfyUI did not return a prompt_id');
-            }
+        // 🔥 ORIGINAL prompt хадгална
+        $originalPrompt = $validated['positive_prompt'];
 
-            $promptId = $responseData['prompt_id'];
+        // 🔥 MODEL profile (SD1.5 vs SD3.5)
+        $modelName = strtolower($validated['model']);
+        $profile = str_contains($modelName, '3.5') ? 'sd35' : 'sd15';
 
-            \App\Models\GeneratedImage::create([
-                'user_id' => auth()->id(),
-                'prompt_id' => $promptId, 
-                'file_name' => null,     
-                'positive_prompt' => $validated['positive_prompt'],
-                'model_used' => $validated['model'],
-                'width' => $validated['width'],
-                'height' => $validated['height'],
-            ]);
+        // 🔥 CANONICAL prompt build
+        $processed = $promptService->buildCanonicalPrompt($originalPrompt, $profile);
 
-            return response()->json(['success' => true, 'prompt_id' => $promptId, 'client_id' => $clientId]);
+        // 🔥 PROMPT overwrite
+        $validated['positive_prompt'] = $processed['prompt'];
 
-        } catch (\Exception $e) {
-            Log::error('Generation Failed: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        // 🔥 NEGATIVE auto-fill
+        if (empty($validated['negative_prompt'])) {
+            $validated['negative_prompt'] = $processed['negative_prompt'];
         }
+
+        // 🔥 DEBUG log
+        Log::info('Prompt v2', [
+            'original' => $originalPrompt,
+            'canonical' => $validated['positive_prompt'],
+            'profile' => $profile
+        ]);
+
+        // negative байхгүй бол автоматаар өгнө
+        if (empty($validated['negative_prompt'])) {
+            $validated['negative_prompt'] = $processed['negative_prompt'];
+        }
+
+        Log::info('Prompt processed', [
+            'original' => $originalPrompt,
+            'canonical' => $validated['positive_prompt']
+        ]);
+
+        // Workflow Selection Logic
+        $isSDXL = str_contains(strtolower($validated['model']), 'sdxl') || str_contains(strtolower($validated['model']), 'sd_xl');
+        $hasRefiner = !empty($validated['refiner_model']);
+
+        if ($isSDXL || $hasRefiner) {
+            $workflow = $this->buildSDXLWorkflow($validated);
+        } elseif (!empty($validated['controlnet']['enabled'])) {
+            $workflow = $this->buildControlNetWorkflow($validated);
+        } else {
+            $workflow = $this->buildBaseWorkflow($validated);
+        }
+
+        $response = Http::timeout(300)->post($this->comfyUrl . '/prompt', [
+            'prompt' => $workflow,
+            'client_id' => $clientId,
+        ]);
+
+        if ($response->failed()) {
+            throw new \Exception('ComfyUI Connection Failed: ' . $response->body());
+        }
+
+        $responseData = $response->json();
+        if (!isset($responseData['prompt_id'])) {
+            throw new \Exception('ComfyUI did not return a prompt_id');
+        }
+
+        $promptId = $responseData['prompt_id'];
+
+        // 🔥 4. DB-д ORIGINAL + CANONICAL хадгал
+        \App\Models\GeneratedImage::create([
+            'user_id' => auth()->id(),
+            'prompt_id' => $promptId,
+            'file_name' => null,
+
+            // 🔥 ШИНЭ 2 COLUMN
+            'original_prompt' => $originalPrompt,
+            'canonical_prompt' => $validated['positive_prompt'],
+
+            // хуучин (compatibility)
+            'positive_prompt' => $validated['positive_prompt'],
+
+            'model_used' => $validated['model'],
+            'width' => $validated['width'],
+            'height' => $validated['height'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'prompt_id' => $promptId,
+            'client_id' => $clientId,
+            'canonical_prompt' => $validated['positive_prompt'] // debug-д гоё
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Generation Failed: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
     /**
      * SDXL Workflow with Base + Refiner
      */
@@ -678,15 +740,19 @@ public function getUserImages()
 
     return response()->json($images);
 }
-public function adminAiStudio()
-{
-    return view('imagegen.admin.pages.admin');
-}
+// public function adminAiStudio()
+// {
+//     $images = \App\Models\GeneratedImage::with('user')
+//         ->orderBy('created_at', 'desc')
+//         ->get();
 
-public function customerAiStudio()
-{
-    return view('imagegen.customer.pages.customer');
-}
+//     return view('imagegen.admin.pages.admin', compact('images'));
+// }
+
+// public function customerAiStudio()
+// {
+//     return view('imagegen.customer.pages.customer');
+// }
 // app/Http/Controllers/ComfyUIController.php
 public function getAllImages()
 {
@@ -746,5 +812,21 @@ public function deleteImage($id)
 public function adminGallery()
 {
     return view('imagegen.admin.pages.admin-gallery');
+}
+public function customerAiStudio()
+{
+     $images = \App\Models\GeneratedImage::with('user')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return view('imagegen.customer.pages.customer', compact('images'));
+}
+public function adminAiStudio()
+{
+    $images = \App\Models\GeneratedImage::with('user')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return view('imagegen.admin.pages.admin', compact('images'));
 }
 }

@@ -86,6 +86,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/object-info', [ComfyUIController::class, 'proxyObjectInfo'])->name('comfyui.object-info');
             Route::get('/models', [ComfyUIController::class, 'getModels'])->name('comfyui.models');
             Route::get('/refiners', [ComfyUIController::class, 'getRefinerModels'])->name('comfyui.refiners');
+            Route::get('/proxy/view', [ComfyUIController::class, 'proxyView'])->name('proxy.view');
         });
     });
 });

@@ -9,17 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Зөвхөн 'blocked_at' багана нэмэх ('is_active' аль хэдийн байгаа)
-            if (!Schema::hasColumn('users', 'blocked_at')) {
-                $table->timestamp('blocked_at')->nullable()->after('email');
-            }
+            $table->string('role')->default('customer')->after('email');
+            $table->timestamp('blocked_at')->nullable()->after('role');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('blocked_at');
+            $table->dropColumn(['role', 'blocked_at']);
         });
     }
 };

@@ -95,18 +95,34 @@
                     </div>
 
                     <div class="grid grid-cols-1 gap-5">
-                        <div class="space-y-2">
-                            <label for="positive_prompt" class="block text-sm font-medium text-slate-700">Positive Prompt</label>
-                            <textarea id="positive_prompt" rows="4"
-                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">masterpiece, architectural photography, modern building exterior, golden hour lighting, luxury facade, high-quality rendering, sharp focus, volumetric lighting</textarea>
-                        </div>
 
+                        <!-- POSITIVE PROMPT -->
                         <div class="space-y-2">
-                            <label for="negative_prompt" class="block text-sm font-medium text-slate-700">Negative Prompt</label>
-                            <textarea id="negative_prompt" rows="3"
-                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">worst quality, low quality, blurry, distorted, cartoonish, ugly</textarea>
+                            <label for="positive_prompt" class="block text-sm font-medium text-slate-700">
+                                Positive Prompt
+                            </label>
+
+                            <textarea id="positive_prompt" rows="4"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        masterpiece, architectural photography, modern building exterior, golden hour lighting
+                                </textarea>
+                            </div>
+                            
+                            
+
+                            <!-- NEGATIVE PROMPT -->
+                            <div class="space-y-2">
+                                <label for="negative_prompt" class="block text-sm font-medium text-slate-700">
+                                    Negative Prompt
+                                </label>
+
+                                <textarea id="negative_prompt" rows="3"
+                                    class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        worst quality, low quality, blurry
+                                </textarea>
+                            </div>
+
                         </div>
-                    </div>
 
                     <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
                         <div class="space-y-2">
@@ -145,7 +161,11 @@
                                 <option value="uni_pc">Uni PC</option>
                             </select>
                         </div>
-
+                        
+                                <div class="mt-6">
+                                    <h3 class="text-lg font-semibold mb-3">Color Palette Picker</h3>
+                                    
+                                </div>
                         <div class="space-y-2">
                             <label for="scheduler" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduler</label>
                             <select id="scheduler"
@@ -385,6 +405,13 @@
                     </div>
                 </div>
             </section>
+            @foreach ($images as $image)
+    <div class="border rounded p-3">
+        <img src="{{ route('proxy.view', ['filename' => $image->file_name, 'subfolder' => $image->subfolder, 'type' => $image->type]) }}" alt="">
+        <p><strong>Original:</strong> {{ $image->original_prompt }}</p>
+        <p><strong>Canonical:</strong> {{ $image->canonical_prompt }}</p>
+    </div>
+@endforeach
         </div>
     </div>
 </div>
@@ -904,28 +931,28 @@ async function interruptGeneration() {
         console.error('Interrupt error:', error);
     }
 }
+                    
+                document.addEventListener('DOMContentLoaded', () => {
+                    loadModels();
+                    loadRefinerModels();
+                    buildPreprocessorUI();
+                    setupImageUpload();
+                    setupSliders();
+                    setupSDXLSupport();
+                    selectPreprocessor('canny');
+                    refreshGallery();
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadModels();
-    loadRefinerModels();
-    buildPreprocessorUI();
-    setupImageUpload();
-    setupSliders();
-    setupSDXLSupport();
-    selectPreprocessor('canny');
-    refreshGallery();
+                    const generateBtn = document.getElementById('generateBtn');
+                    if (generateBtn) generateBtn.onclick = generate;
 
-    const generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) generateBtn.onclick = generate;
+                    const refreshBtn = document.getElementById('refreshGalleryBtn');
+                    if (refreshBtn) refreshBtn.onclick = refreshGallery;
 
-    const refreshBtn = document.getElementById('refreshGalleryBtn');
-    if (refreshBtn) refreshBtn.onclick = refreshGallery;
+                    const interruptBtn = document.getElementById('interruptBtn');
+                    if (interruptBtn) interruptBtn.onclick = interruptGeneration;
 
-    const interruptBtn = document.getElementById('interruptBtn');
-    if (interruptBtn) interruptBtn.onclick = interruptGeneration;
-
-    setInterval(refreshGallery, 10000);
-});
+                    setInterval(refreshGallery, 10000);
+                });
 </script>
 @endpush
 @endsection
