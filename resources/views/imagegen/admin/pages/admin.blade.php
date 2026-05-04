@@ -162,10 +162,6 @@
                             </select>
                         </div>
                         
-                                <div class="mt-6">
-                                    <h3 class="text-lg font-semibold mb-3">Color Palette Picker</h3>
-                                    
-                                </div>
                         <div class="space-y-2">
                             <label for="scheduler" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduler</label>
                             <select id="scheduler"

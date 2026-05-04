@@ -19,6 +19,11 @@
             <nav class="flex-1 px-4 py-6 space-y-2">
                 <a href="{{ route('customer.dashboard') }}"
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    Dashboard
+                </a>
+
+                <a href="{{ route('customer.ai-studio') }}"
+                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.ai-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                     Generate Images
                 </a>
 

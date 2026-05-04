@@ -23,7 +23,7 @@
                     </p>
 
                     <div class="mt-6 flex flex-wrap gap-3">
-                        <a href="{{ route('customer.dashboard') }}"
+                        <a href="{{ route('customer.ai-studio') }}"
                            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-700">
                             Customer Studio
                         </a>
@@ -102,7 +102,7 @@
             </div>
 
             <div class="mt-auto pt-6 flex flex-wrap gap-3">
-                <a href="{{ route('customer.dashboard') }}"
+                <a href="{{ route('customer.ai-studio') }}"
                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
                     Open Studio
                 </a>
@@ -145,7 +145,7 @@
             </div>
 
             <div class="mt-auto pt-6 flex flex-wrap gap-3">
-                <a href="{{ route('customer.dashboard') }}"
+                <a href="{{ route('customer.ai-studio') }}"
                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
                     Start Editing
                 </a>
@@ -205,7 +205,7 @@
                     Dashboard
                 </a>
 
-                <a href="{{ route('customer.dashboard') }}"
+                <a href="{{ route('customer.ai-studio') }}"
                    class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700">
                     Customer
                 </a>

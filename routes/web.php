@@ -46,7 +46,13 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('customer')->name('customer.')->group(function () {
-        Route::view('/dashboard', 'imagegen.customer.pages.customer')->name('dashboard');
+        Route::view('/dashboard', 'dashboard', [
+            'dashboardLayout' => 'imagegen.customer.layouts.app',
+            'dashboardTitle' => 'Customer Dashboard',
+            'dashboardHeading' => 'Customer Dashboard',
+            'dashboardSubtitle' => 'AI platform overview',
+        ])->name('dashboard');
+        Route::view('/ai-studio', 'imagegen.customer.pages.customer')->name('ai-studio');
         Route::view('/gallery', 'imagegen.customer.pages.gallery')->name('gallery');
 
         Route::delete('/api/images/{id}', [ComfyUIController::class, 'deleteCustomerImage'])
@@ -59,6 +65,12 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
  Route::middleware([IsAdmin::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('/dashboard', 'dashboard', [
+        'dashboardLayout' => 'imagegen.admin.layouts.app',
+        'dashboardTitle' => 'Admin Dashboard',
+        'dashboardHeading' => 'Admin Dashboard',
+        'dashboardSubtitle' => 'AI platform overview',
+    ])->name('dashboard');
     Route::get('/ai-studio', [ComfyUIController::class, 'adminAiStudio'])->name('ai-studio');
     Route::get('/gallery', [ComfyUIController::class, 'adminGallery'])->name('gallery');
     Route::get('/api/images', [ComfyUIController::class, 'getAllImages'])->name('api.images');

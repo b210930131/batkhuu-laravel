@@ -17,6 +17,11 @@
             </div>
 
             <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="{{ route('admin.dashboard') }}"
+                   class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                    Dashboard
+                </a>
+
                 <a href="{{ route('admin.ai-studio') }}"
                    class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.ai-studio') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                     Admin Studio
