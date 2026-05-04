@@ -51,48 +51,24 @@ class ComfyUIController extends Controller
 
         $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
 
-        // 🔥 1. ORIGINAL PROMPT хадгалж авна
-        $originalPrompt = $validated['positive_prompt'];
+        $originalPrompt = trim($validated['positive_prompt']);
 
-        // 🔥 2. CANONICAL PROMPT болгоно
         $processed = $promptService->buildCanonicalPrompt($originalPrompt);
+        $canonicalPrompt = trim($processed['prompt'] ?? '');
 
-        // 🔥 3. PROMPT-уудыг overwrite хийнэ
-        $validated['positive_prompt'] = $processed['prompt'];
-
-        // 🔥 ORIGINAL prompt хадгална
-        $originalPrompt = $validated['positive_prompt'];
-
-        // 🔥 MODEL profile (SD1.5 vs SD3.5)
-        $modelName = strtolower($validated['model']);
-        $profile = str_contains($modelName, '3.5') ? 'sd35' : 'sd15';
-
-        // 🔥 CANONICAL prompt build
-        $processed = $promptService->buildCanonicalPrompt($originalPrompt, $profile);
-
-        // 🔥 PROMPT overwrite
-        $validated['positive_prompt'] = $processed['prompt'];
-
-        // 🔥 NEGATIVE auto-fill
-        if (empty($validated['negative_prompt'])) {
-            $validated['negative_prompt'] = $processed['negative_prompt'];
+        if ($canonicalPrompt === '') {
+            $canonicalPrompt = $originalPrompt;
         }
 
-        // 🔥 DEBUG log
-        Log::info('Prompt v2', [
-            'original' => $originalPrompt,
-            'canonical' => $validated['positive_prompt'],
-            'profile' => $profile
-        ]);
+        $validated['positive_prompt'] = $canonicalPrompt;
 
-        // negative байхгүй бол автоматаар өгнө
         if (empty($validated['negative_prompt'])) {
             $validated['negative_prompt'] = $processed['negative_prompt'];
         }
 
         Log::info('Prompt processed', [
             'original' => $originalPrompt,
-            'canonical' => $validated['positive_prompt']
+            'canonical' => $validated['positive_prompt'],
         ]);
 
         // Workflow Selection Logic
@@ -295,7 +271,10 @@ class ComfyUIController extends Controller
      */
     protected function buildControlNetWorkflow(array $p)
     {
-        $filename = $this->saveBase64Image($p['controlnet']['image_base64']);
+        $filename = $this->saveBase64Image(
+            $p['controlnet']['image_base64'],
+            $p['controlnet']['preprocessor'] ?? 'canny'
+        );
         
         return [
             "3" => [
@@ -561,14 +540,25 @@ class ComfyUIController extends Controller
         }
     }
 
-    protected function saveBase64Image($base64String)
+    protected function saveBase64Image($base64String, ?string $preprocessor = null)
     {
+        $mimeType = 'image/png';
         if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {
+            $mimeType = 'image/' . strtolower($type[1]);
             $base64String = substr($base64String, strpos($base64String, ',') + 1);
         }
         
         $data = base64_decode($base64String);
-        $filename = 'upload_' . time() . '_' . rand(1000, 9999) . '.png';
+        if ($data === false) {
+            throw new \Exception('Invalid input image data');
+        }
+
+        $extension = match ($mimeType) {
+            'image/jpeg', 'image/jpg' => 'jpg',
+            'image/webp' => 'webp',
+            default => 'png',
+        };
+        $filename = 'upload_' . time() . '_' . uniqid() . '.' . $extension;
         
         $inputPath = env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input');
         
@@ -578,6 +568,34 @@ class ComfyUIController extends Controller
         
         $fullPath = $inputPath . '/' . $filename;
         File::put($fullPath, $data);
+
+        $userId = auth()->id();
+        if ($userId) {
+            try {
+                $publicDir = public_path('input-images/' . $userId);
+                if (!File::exists($publicDir)) {
+                    File::makeDirectory($publicDir, 0777, true);
+                }
+
+                $publicPath = 'input-images/' . $userId . '/' . $filename;
+                File::put(public_path($publicPath), $data);
+
+                \App\Models\InputImage::create([
+                    'user_id' => $userId,
+                    'file_name' => $filename,
+                    'path' => $publicPath,
+                    'mime_type' => $mimeType,
+                    'source_type' => 'controlnet',
+                    'preprocessor' => $preprocessor,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Input image gallery copy failed', [
+                    'user_id' => $userId,
+                    'file_name' => $filename,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
         
         Log::info('Image saved', ['path' => $fullPath]);
         
@@ -733,12 +751,153 @@ public function getRefinerModels()
 }
 public function getUserImages()
 {
-    // This pulls only the images for the logged-in user
-    $images = \App\Models\GeneratedImage::where('user_id', auth()->id())
+    $images = \App\Models\GeneratedImage::with('galleryFolder')
+                ->where('user_id', auth()->id())
                 ->orderBy('created_at', 'desc')
                 ->get();
 
     return response()->json($images);
+}
+
+public function getUserInputImages()
+{
+    $images = \App\Models\InputImage::where('user_id', auth()->id())
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return response()->json($images);
+}
+
+public function deleteCustomerInputImage($id)
+{
+    $image = \App\Models\InputImage::where('user_id', auth()->id())->findOrFail($id);
+    $this->deleteInputImageFile($image);
+    $image->delete();
+
+    return response()->json(['success' => true]);
+}
+
+public function getUserFolders()
+{
+    $folders = \App\Models\GalleryFolder::where('user_id', auth()->id())
+        ->withCount('images')
+        ->orderBy('name')
+        ->get();
+
+    return response()->json($folders);
+}
+
+public function storeUserFolder(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:80',
+    ]);
+
+    $name = trim($validated['name']);
+    if ($name === '') {
+        return response()->json(['message' => 'Folder name is required.'], 422);
+    }
+
+    $folder = \App\Models\GalleryFolder::firstOrCreate([
+        'user_id' => auth()->id(),
+        'name' => $name,
+    ]);
+
+    return response()->json($folder->loadCount('images'), 201);
+}
+
+public function deleteUserFolder($id)
+{
+    $folder = \App\Models\GalleryFolder::where('user_id', auth()->id())->findOrFail($id);
+
+    \App\Models\GeneratedImage::where('user_id', auth()->id())
+        ->where('gallery_folder_id', $folder->id)
+        ->update(['gallery_folder_id' => null]);
+
+    $folder->delete();
+
+    return response()->json(['success' => true]);
+}
+
+public function moveCustomerImage(Request $request, $id)
+{
+    $validated = $request->validate([
+        'folder_id' => 'nullable|integer|exists:gallery_folders,id',
+    ]);
+
+    $image = \App\Models\GeneratedImage::where('user_id', auth()->id())->findOrFail($id);
+    $folderId = $validated['folder_id'] ?? null;
+
+    if ($folderId) {
+        \App\Models\GalleryFolder::where('user_id', auth()->id())->findOrFail($folderId);
+    }
+
+    $image->update(['gallery_folder_id' => $folderId]);
+
+    return response()->json(['success' => true, 'image' => $image->fresh('galleryFolder')]);
+}
+
+public function getAdminFolders()
+{
+    $folders = \App\Models\GalleryFolder::with('user')
+        ->withCount('images')
+        ->orderBy('name')
+        ->get();
+
+    return response()->json($folders);
+}
+
+public function storeAdminFolder(Request $request)
+{
+    $validated = $request->validate([
+        'user_id' => 'required|integer|exists:users,id',
+        'name' => 'required|string|max:80',
+    ]);
+
+    $name = trim($validated['name']);
+    if ($name === '') {
+        return response()->json(['message' => 'Folder name is required.'], 422);
+    }
+
+    $folder = \App\Models\GalleryFolder::firstOrCreate([
+        'user_id' => $validated['user_id'],
+        'name' => $name,
+    ]);
+
+    return response()->json($folder->load(['user'])->loadCount('images'), 201);
+}
+
+public function deleteAdminFolder($id)
+{
+    $folder = \App\Models\GalleryFolder::findOrFail($id);
+
+    \App\Models\GeneratedImage::where('gallery_folder_id', $folder->id)
+        ->update(['gallery_folder_id' => null]);
+
+    $folder->delete();
+
+    return response()->json(['success' => true]);
+}
+
+public function moveAdminImage(Request $request, $id)
+{
+    $validated = $request->validate([
+        'folder_id' => 'nullable|integer|exists:gallery_folders,id',
+    ]);
+
+    $image = \App\Models\GeneratedImage::findOrFail($id);
+    $folderId = $validated['folder_id'] ?? null;
+
+    if ($folderId) {
+        $folder = \App\Models\GalleryFolder::findOrFail($folderId);
+        if ((int) $folder->user_id !== (int) $image->user_id) {
+            return response()->json(['message' => 'Folder owner must match image owner.'], 422);
+        }
+    }
+
+    $image->update(['gallery_folder_id' => $folderId]);
+
+    return response()->json(['success' => true, 'image' => $image->fresh(['user', 'galleryFolder'])]);
 }
 // public function adminAiStudio()
 // {
@@ -756,11 +915,43 @@ public function getUserImages()
 // app/Http/Controllers/ComfyUIController.php
 public function getAllImages()
 {
-    $images = \App\Models\GeneratedImage::with('user')
+    $images = \App\Models\GeneratedImage::with(['user', 'galleryFolder'])
         ->orderBy('created_at', 'desc')
         ->get();
 
     return response()->json($images);
+}
+
+public function getAllInputImages()
+{
+    $images = \App\Models\InputImage::with('user')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return response()->json($images);
+}
+
+public function deleteAdminInputImage($id)
+{
+    $image = \App\Models\InputImage::findOrFail($id);
+    $this->deleteInputImageFile($image);
+    $image->delete();
+
+    return response()->json(['success' => true]);
+}
+
+protected function deleteInputImageFile(\App\Models\InputImage $image): void
+{
+    $publicFile = public_path($image->path);
+    if ($image->path && file_exists($publicFile)) {
+        unlink($publicFile);
+    }
+
+    $comfyInputDir = env('COMFYUI_INPUT_DIR', '/home/batkhuu/ComfyUI/input');
+    $comfyFile = $comfyInputDir . '/' . $image->file_name;
+    if ($image->file_name && file_exists($comfyFile)) {
+        unlink($comfyFile);
+    }
 }
 public function deleteCustomerImage($id)
 {
@@ -809,13 +1000,42 @@ public function deleteImage($id)
 
     return response()->json(['success' => true]);
 }
+public function customerGallery()
+{
+    $images = \App\Models\GeneratedImage::with('galleryFolder')
+        ->where('user_id', auth()->id())
+        ->whereNotNull('file_name')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    $folders = \App\Models\GalleryFolder::where('user_id', auth()->id())
+        ->withCount('images')
+        ->orderBy('name')
+        ->get();
+
+    return view('imagegen.customer.pages.gallery', [
+        'initialImages' => $images,
+        'initialFolders' => $folders,
+    ]);
+}
+
 public function adminGallery()
 {
     return view('imagegen.admin.pages.admin-gallery');
 }
+
+public function customerInputImages()
+{
+    return view('imagegen.customer.pages.input-images');
+}
+
+public function adminInputImages()
+{
+    return view('imagegen.admin.pages.input-images');
+}
 public function customerAiStudio()
 {
-     $images = \App\Models\GeneratedImage::with('user')
+     $images = \App\Models\GeneratedImage::with(['user', 'galleryFolder'])
         ->orderBy('created_at', 'desc')
         ->get();
 
@@ -823,7 +1043,7 @@ public function customerAiStudio()
 }
 public function adminAiStudio()
 {
-    $images = \App\Models\GeneratedImage::with('user')
+    $images = \App\Models\GeneratedImage::with(['user', 'galleryFolder'])
         ->orderBy('created_at', 'desc')
         ->get();
 

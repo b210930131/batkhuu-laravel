@@ -9,6 +9,7 @@ class GeneratedImage extends Model
     protected $fillable = [
         'user_id',
         'prompt_id',
+        'gallery_folder_id',
         'file_name',
         'positive_prompt',
         'original_prompt',
@@ -22,5 +23,10 @@ class GeneratedImage extends Model
     public function user()
 {
     return $this->belongsTo(\App\Models\User::class, 'user_id');
+}
+
+public function galleryFolder()
+{
+    return $this->belongsTo(\App\Models\GalleryFolder::class);
 }
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ComfyUIController;
+use App\Http\Controllers\BlenderController;
 use App\Http\Middleware\IsAdmin;
 
 /*
@@ -53,10 +54,20 @@ Route::middleware(['auth'])->group(function () {
             'dashboardSubtitle' => 'AI platform overview',
         ])->name('dashboard');
         Route::view('/ai-studio', 'imagegen.customer.pages.customer')->name('ai-studio');
-        Route::view('/gallery', 'imagegen.customer.pages.gallery')->name('gallery');
+        Route::get('/blender-studio', [BlenderController::class, 'customerStudio'])->name('blender-studio');
+        Route::get('/gallery', [ComfyUIController::class, 'customerGallery'])->name('gallery');
+        Route::get('/input-images', [ComfyUIController::class, 'customerInputImages'])->name('input-images');
 
+        Route::get('/api/images', [ComfyUIController::class, 'getUserImages'])->name('api.images.index');
+        Route::get('/api/input-images', [ComfyUIController::class, 'getUserInputImages'])->name('api.input-images.index');
+        Route::delete('/api/input-images/{id}', [ComfyUIController::class, 'deleteCustomerInputImage'])->name('api.input-images.destroy');
         Route::delete('/api/images/{id}', [ComfyUIController::class, 'deleteCustomerImage'])
             ->name('api.images.destroy');
+        Route::patch('/api/images/{id}/folder', [ComfyUIController::class, 'moveCustomerImage'])
+            ->name('api.images.folder');
+        Route::get('/api/folders', [ComfyUIController::class, 'getUserFolders'])->name('api.folders.index');
+        Route::post('/api/folders', [ComfyUIController::class, 'storeUserFolder'])->name('api.folders.store');
+        Route::delete('/api/folders/{id}', [ComfyUIController::class, 'deleteUserFolder'])->name('api.folders.destroy');
     });
 
     /*
@@ -72,11 +83,20 @@ Route::middleware(['auth'])->group(function () {
         'dashboardSubtitle' => 'AI platform overview',
     ])->name('dashboard');
     Route::get('/ai-studio', [ComfyUIController::class, 'adminAiStudio'])->name('ai-studio');
+    Route::get('/blender-studio', [BlenderController::class, 'adminStudio'])->name('blender-studio');
     Route::get('/gallery', [ComfyUIController::class, 'adminGallery'])->name('gallery');
+    Route::get('/input-images', [ComfyUIController::class, 'adminInputImages'])->name('input-images');
     Route::get('/api/images', [ComfyUIController::class, 'getAllImages'])->name('api.images');
+    Route::get('/api/input-images', [ComfyUIController::class, 'getAllInputImages'])->name('api.input-images');
+    Route::delete('/api/input-images/{id}', [ComfyUIController::class, 'deleteAdminInputImage'])->name('api.input-images.destroy');
+    Route::get('/api/folders', [ComfyUIController::class, 'getAdminFolders'])->name('api.folders.index');
+    Route::post('/api/folders', [ComfyUIController::class, 'storeAdminFolder'])->name('api.folders.store');
+    Route::delete('/api/folders/{id}', [ComfyUIController::class, 'deleteAdminFolder'])->name('api.folders.destroy');
 
     Route::delete('/gallery/delete/{id}', [ComfyUIController::class, 'deleteImage'])
         ->name('gallery.delete');
+    Route::patch('/gallery/{id}/folder', [ComfyUIController::class, 'moveAdminImage'])
+        ->name('gallery.folder');
 });
 
     /*
@@ -86,6 +106,7 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::prefix('api')->group(function () {
         Route::post('/generate', [ComfyUIController::class, 'generate'])->name('api.generate');
+        Route::post('/blender/render', [BlenderController::class, 'render'])->name('api.blender.render');
         Route::post('/images/complete', [ComfyUIController::class, 'finalizeImage'])->name('api.images.complete');
         Route::get('/images', [ComfyUIController::class, 'getUserImages'])->name('api.images');
 

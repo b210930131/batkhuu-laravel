@@ -31,6 +31,16 @@
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.gallery') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                     My Gallery
                 </a>
+
+                <a href="{{ route('customer.blender-studio') }}"
+                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.blender-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    Blender Studio
+                </a>
+
+                <a href="{{ route('customer.input-images') }}"
+                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.input-images') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    Input Images
+                </a>
             </nav>
 
             <div class="p-4 border-t border-slate-800">
@@ -48,7 +58,7 @@
             </div>
         </aside>
 
-        <main class="flex-1 p-6">
+        <main class="min-w-0 flex-1 p-6">
             <div class="mb-6 rounded-2xl bg-white shadow-sm border border-slate-200 px-6 py-4">
                 <h2 class="text-2xl font-bold">@yield('page_title', 'Customer Dashboard')</h2>
                 <p class="text-sm text-slate-500 mt-1">@yield('page_subtitle', 'Manage your AI images')</p>

@@ -545,7 +545,7 @@ function setupImageUpload() {
 
     if (!input) return;
 
-    input.addEventListener('change', (e) => {
+    input.addEventListener('change', async (e) => {
         const file = e.target.files[0];
 
         if (!file) {
@@ -561,18 +561,66 @@ function setupImageUpload() {
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            currentControlImage = event.target.result;
+        try {
+            currentControlImage = await prepareControlImage(file);
             if (preview) {
                 preview.innerHTML = `
                     <img src="${currentControlImage}" class="max-h-64 w-full rounded-2xl border border-slate-200 object-contain bg-white p-2">
                 `;
             }
             updateControlNetStatus();
-        };
+        } catch (error) {
+            console.error('Image upload error:', error);
+            alert(error.message || 'Failed to load image');
+            input.value = '';
+            currentControlImage = null;
+            if (preview) preview.innerHTML = '';
+            updateControlNetStatus();
+        }
+    });
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = () => reject(new Error('Could not read image file'));
         reader.readAsDataURL(file);
     });
+}
+
+function loadImageElement(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Could not load image preview'));
+        img.src = src;
+    });
+}
+
+async function prepareControlImage(file) {
+    const originalDataUrl = await readFileAsDataUrl(file);
+    const image = await loadImageElement(originalDataUrl);
+    const maxSide = 1280;
+    const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    if (originalDataUrl.length > 4 * 1024 * 1024) {
+        return compressedDataUrl;
+    }
+
+    return compressedDataUrl.length < originalDataUrl.length ? compressedDataUrl : originalDataUrl;
 }
 
 function setupSliders() {
@@ -898,14 +946,22 @@ async function generate() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            const plainError = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            throw new Error(plainError || `Server returned ${response.status}`);
+        }
 
-        if (!data.success) throw new Error(data.error || 'Generation failed');
+        if (!response.ok || !data.success) throw new Error(data.error || data.message || 'Generation failed');
 
         setStatus('✅ Generation started! Processing...', 'info');
         pollForResults(data.prompt_id);
