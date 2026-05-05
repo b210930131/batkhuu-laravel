@@ -37,3 +37,4 @@ public/comfy-output/
 *.pth
 *.bin
 public/comfy-output/
+public/input-images/
