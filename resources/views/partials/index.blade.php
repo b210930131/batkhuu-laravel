@@ -94,8 +94,8 @@
 
             <div class="mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4 text-center">
                 <div>
-                    <div class="text-lg font-bold text-slate-900">2.5k+</div>
-                    <div class="text-xs text-slate-500">Projects</div>
+                    <div class="text-lg font-bold text-slate-900">10+ models</div>
+                    <div class="text-xs text-slate-500">Diffusion</div>
                 </div>
                 <div>
                     <div class="text-lg font-bold text-slate-900">Fast</div>
@@ -129,33 +129,32 @@
             </div>
 
             <h3 class="mt-4 text-2xl font-bold tracking-tight text-slate-900">
-                AI зураг шинэчлэх
+                Blender ашиглан 3D орчны өрөөний зураг үүсгэх
             </h3>
 
             <p class="mt-3 text-sm leading-6 text-slate-600">
-                Canny, Depth болон бусад preprocessor ашиглан бүтэц хадгалсан generation хийж,
-                image-guided workflow ажиллуулна.
+                Өрөөний зураг шинээр загварчилж үүсгэнэ.
             </p>
 
             <div class="mt-6 space-y-3 rounded-2xl bg-slate-50 p-4">
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">Canny</span>
-                    <span class="font-semibold text-slate-900">Enabled</span>
+                    <span class="text-slate-500">Camerview</span>
+                    <span class="font-semibold text-slate-900">Placement</span>
                 </div>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">Depth</span>
+                    <span class="text-slate-500">Blender Integration</span>
                     <span class="font-semibold text-slate-900">Supported</span>
                 </div>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">Image Guide</span>
+                    <span class="text-slate-500">Structure</span>
                     <span class="font-semibold text-slate-900">Ready</span>
                 </div>
             </div>
 
             <div class="mt-auto pt-6 flex flex-wrap gap-3">
-                <a href="{{ route('customer.ai-studio') }}"
+                <a href="{{ route('admin.blender-studio') }}"
                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    Start Editing
+                    Start Creating
                 </a>
 
                 <a href="{{ route('customer.gallery') }}"
@@ -233,19 +232,20 @@
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 class="text-lg font-semibold text-slate-900">UI Notes</h3>
+            <h3 class="text-lg font-semibold text-slate-900">Start prompt</h3>
             <ul class="mt-4 space-y-3 text-sm text-slate-600">
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-indigo-500"></span>
-                    Cards are equal-height using <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">flex h-full flex-col</code>
+                    Exterior design
+                    <!-- <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">flex h-full flex-col</code> -->
                 </li>
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
-                    Buttons are aligned using consistent padding and inline-flex
+                    Interior design
                 </li>
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-violet-500"></span>
-                    Old fake loading script is removed; use real loading only on API actions
+                    Furniture design
                 </li>
             </ul>
         </div>
