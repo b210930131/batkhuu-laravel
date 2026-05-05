@@ -4,6 +4,10 @@
 /storage/
 /public/hot
 /public/storage
+/public/input-images/*
+/public/input-images/**/*
+/public/input-images/*
+/public/input-images/**/*
 
 Homestead.json
 Homestead.yaml
