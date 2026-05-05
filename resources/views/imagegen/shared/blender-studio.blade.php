@@ -5,7 +5,7 @@
 @section('page_subtitle', 'Build a fixed room scene, preview the plan, and render a ControlNet input')
 
 @section('content')
-<div class="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_520px]">
+<div class="grid grid-cols-2 gap-5 2xl:grid-cols-[minmax(0,1fr)_520px]">
     <section class="space-y-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4 flex items-center justify-between gap-3">
@@ -27,13 +27,34 @@
                     <input id="roomHeight" type="number" min="2" max="6" step="0.1" value="2.8" class="mt-1 w-full rounded-xl border-slate-300 text-sm">
                 </label>
             </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 class="text-base font-bold text-slate-900">Camera</h3>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" onclick="applyCameraPreset('corner')" class="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Corner wide</button>
+                    <button type="button" onclick="applyCameraPreset('door')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Door view</button>
+                    <button type="button" onclick="applyCameraPreset('window')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Window view</button>
+                    <button type="button" onclick="applyCameraPreset('top')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Top angled</button>
+                    <button type="button" onclick="resetCameraDefault()" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white">Reset camera</button>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <label class="text-xs font-semibold text-slate-600">Camera X<input id="camX" type="range" min="-3" max="12" step="0.1" value="3.8" class="w-full"></label>
+                    <label class="text-xs font-semibold text-slate-600">Camera Y<input id="camY" type="range" min="-3" max="14" step="0.1" value="1.1" class="w-full"></label>
+                    <label class="text-xs font-semibold text-slate-600">Target X<input id="targetX" type="range" min="0" max="12" step="0.1" value="3.8" class="w-full"></label>
+                    <label class="text-xs font-semibold text-slate-600">Target Y<input id="targetY" type="range" min="0" max="14" step="0.1" value="3.7" class="w-full"></label>
+                    <label class="text-xs font-semibold text-slate-600">Height<input id="camHeight" type="range" min="0.8" max="3.5" step="0.1" value="1.5" class="w-full"></label>
+                    <label class="text-xs font-semibold text-slate-600">FOV<input id="camFov" type="range" min="25" max="90" step="1" value="66" class="w-full"></label>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-base font-bold text-slate-900">Openings</h3>
-                    <button type="button" onclick="addOpening()" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Add</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="addDoor()" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Add door</button>
+                        <button type="button" onclick="addWindow()" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Add window</button>
+                    </div>
                 </div>
                 <div id="openingsList" class="space-y-3"></div>
             </div>
@@ -60,23 +81,7 @@
                 <div id="electricalList" class="space-y-3"></div>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 class="text-base font-bold text-slate-900">Camera</h3>
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" onclick="applyCameraPreset('corner')" class="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Corner wide</button>
-                    <button type="button" onclick="applyCameraPreset('door')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Door view</button>
-                    <button type="button" onclick="applyCameraPreset('window')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Window view</button>
-                    <button type="button" onclick="applyCameraPreset('top')" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Top angled</button>
-                </div>
-                <div class="mt-4 grid grid-cols-2 gap-3">
-                    <label class="text-xs font-semibold text-slate-600">Camera X<input id="camX" type="range" min="-3" max="12" step="0.1" value="-1.2" class="w-full"></label>
-                    <label class="text-xs font-semibold text-slate-600">Camera Y<input id="camY" type="range" min="-3" max="14" step="0.1" value="-1.0" class="w-full"></label>
-                    <label class="text-xs font-semibold text-slate-600">Target X<input id="targetX" type="range" min="0" max="12" step="0.1" value="2.6" class="w-full"></label>
-                    <label class="text-xs font-semibold text-slate-600">Target Y<input id="targetY" type="range" min="0" max="14" step="0.1" value="3.2" class="w-full"></label>
-                    <label class="text-xs font-semibold text-slate-600">Height<input id="camHeight" type="range" min="0.8" max="3.5" step="0.1" value="1.55" class="w-full"></label>
-                    <label class="text-xs font-semibold text-slate-600">FOV<input id="camFov" type="range" min="25" max="90" step="1" value="58" class="w-full"></label>
-                </div>
-            </div>
+            
         </div>
     </section>
 
@@ -164,9 +169,8 @@
 <script>
 const state = {
     openings: [
-        { type: 'door', wall: 'south', position: 0.8, width: 0.9, height: 2.1, sill: 0 },
-        { type: 'window', wall: 'east', position: 1.4, width: 1.6, height: 1.2, sill: 0.9 },
-        { type: 'balcony', wall: 'north', position: 2.2, width: 1.4, height: 2.2, sill: 0 },
+        { type: 'door', wall: 'east', position: 0.35, width: 1.18, height: 2.2, sill: 0 },
+        { type: 'window', wall: 'east', position: 3.05, width: 1.9, height: 1.45, sill: 0.62 },
     ],
     columns: [{ x: 4.2, y: 4.8, width: 0.35, depth: 0.35 }],
     beams: [{ direction: 'x', position: 3.2, width: 0.28, depth: 0.32 }],
@@ -260,7 +264,9 @@ function updateArray(group, index, key, value) {
     drawPlan();
 }
 function removeItem(group, index) { state[group].splice(index, 1); renderLists(); drawPlan(); }
-function addOpening() { state.openings.push({ type: 'window', wall: 'north', position: 1, width: 1.2, height: 1.1, sill: 0.9 }); renderLists(); drawPlan(); }
+function addDoor() { state.openings.push({ type: 'door', wall: 'east', position: 0.35, width: 1.18, height: 2.2, sill: 0 }); renderLists(); drawPlan(); }
+function addWindow() { state.openings.push({ type: 'window', wall: 'east', position: 3.05, width: 1.9, height: 1.45, sill: 0.62 }); renderLists(); drawPlan(); }
+function addOpening() { addWindow(); }
 function addColumn() { state.columns.push({ x: 2, y: 2, width: 0.3, depth: 0.3 }); renderLists(); drawPlan(); }
 function addBeam() { state.beams.push({ direction: 'x', position: 2, width: 0.25, depth: 0.3 }); renderLists(); drawPlan(); }
 function addElectrical() { state.electrical.push({ type: 'switch', wall: 'south', position: 1, height: 1.1 }); renderLists(); drawPlan(); }
@@ -335,6 +341,7 @@ function applyCameraPreset(name) {
     const r = room();
     state.cameraPreset = name;
     const presets = {
+        reset: [3.8, 1.1, 3.8, 3.7, 1.5, 66],
         corner: [r.width * 0.82, -1.8, r.width * 0.36, r.length * 0.56, 1.55, 72],
         door: [r.width * 0.55, -2.2, r.width * 0.56, r.length * 0.62, 1.45, 68],
         window: [r.width * 0.78, -1.6, r.width * 0.2, r.length * 0.58, 1.5, 66],
@@ -342,6 +349,10 @@ function applyCameraPreset(name) {
     }[name];
     ['camX','camY','targetX','targetY','camHeight','camFov'].forEach((id, i) => document.getElementById(id).value = presets[i]);
     drawPlan();
+}
+
+function resetCameraDefault() {
+    applyCameraPreset('reset');
 }
 
 function openObjectModal(event, group, index) {
@@ -563,7 +574,7 @@ async function renderBlender() {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderLists();
-    applyCameraPreset('corner');
+    resetCameraDefault();
     ['roomWidth','roomLength','roomHeight','camX','camY','targetX','targetY','camHeight','camFov'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', drawPlan);
     });

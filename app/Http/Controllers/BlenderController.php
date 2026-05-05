@@ -214,9 +214,22 @@ class BlenderController extends Controller
                     'sill_height' => (float) ($window['sill'] ?? 0.9),
                 ],
             ],
+            'exported_door_window_model' => [
+                'enabled' => true,
+                'scale' => 0.70,
+                'depth_scale' => 1.4,
+                'embed_depth' => 0.04,
+                'door' => [
+                    'path' => 'C:/ai_blender_pipeline/door.blend',
+                ],
+                'window' => [
+                    'path' => 'C:/ai_blender_pipeline/window.blend',
+                ],
+            ],
             'openings' => $data['openings'] ?? [],
             'visibility' => [
                 'show_front_wall' => false,
+                'show_right_wall' => true,
             ],
             'lighting' => [
                 'type' => 'AREA',
