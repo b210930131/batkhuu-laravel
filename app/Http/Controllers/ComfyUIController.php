@@ -609,7 +609,7 @@ class ComfyUIController extends Controller
             "class_type" => "Canny", 
             "inputs" => [
                 "image" => [$imgNode, 0], 
-                "low_threshold" => 0.4,  // Default 0.4 (was 50/255)
+                "low_threshold" => 0.1,  // Default 0.4 (was 50/255)
                 "high_threshold" => 0.8   // Default 0.8 (was 150/255)
             ]
         ],

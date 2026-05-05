@@ -103,8 +103,7 @@
                             </label>
 
                             <textarea id="positive_prompt" rows="4"
-                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
-                        masterpiece, architectural photography, modern building exterior, golden hour lighting
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">modern cozy living room interior, warm and inviting atmosphere, elegant contemporary design, soft ambient lighting, comfortable fabric sofa, stylish coffee table, textured rug, wooden floor, neutral color palette, beige and cream tones, large window, natural light, sheer curtains, indoor plants, minimal decor, clean layout, realistic interior, detailed furniture, soft shadows, cozy ceiling light, high detail, photorealistic, beautiful composition, interior design photography
                                 </textarea>
                             </div>
                             
@@ -117,8 +116,7 @@
                                 </label>
 
                                 <textarea id="negative_prompt" rows="3"
-                                    class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
-                        worst quality, low quality, blurry
+                                    class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">low quality, worst quality, blurry, distorted furniture, deformed room, bad perspective, extra objects, cluttered, messy, oversaturated, cartoon, anime, low detail, duplicate furniture, floating objects, unrealistic lighting, warped walls, bad anatomy, text, watermark, logo
                                 </textarea>
                             </div>
 

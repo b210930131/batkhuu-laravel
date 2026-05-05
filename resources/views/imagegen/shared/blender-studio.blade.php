@@ -169,13 +169,13 @@
 <script>
 const state = {
     openings: [
-        { type: 'door', wall: 'east', position: 0.35, width: 1.18, height: 2.2, sill: 0 },
-        { type: 'window', wall: 'east', position: 3.05, width: 1.9, height: 1.45, sill: 0.62 },
+        { type: 'door', wall: 'north', position: 1.45, width: 1.18, height: 2.2, sill: 0 },
+        { type: 'window', wall: 'north', position: 3.05, width: 1.9, height: 1.45, sill: 0.62 },
     ],
-    columns: [{ x: 4.2, y: 4.8, width: 0.35, depth: 0.35 }],
-    beams: [{ direction: 'x', position: 3.2, width: 0.28, depth: 0.32 }],
+    columns: [{ x: 5, y: 6.0, width: 0.35, depth: 0.35 }],
+    beams: [{ direction: 'x', position: 6, width: 0.35, depth: 0.32 }],
     electrical: [
-        { type: 'switch', wall: 'south', position: 1.9, height: 1.1 },
+        { type: 'switch', wall: 'north', position: 1, height: 1.1 },
         { type: 'socket', wall: 'west', position: 2.6, height: 0.35 },
     ],
     cameraPreset: 'corner',
