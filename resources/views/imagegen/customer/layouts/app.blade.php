@@ -21,7 +21,14 @@
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                     Dashboard
                 </a>
-
+                <a href="{{ route('customer.blender-studio') }}"
+                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.blender-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    Blender Studio
+                </a>
+                <a href="{{ route('customer.input-images') }}"
+                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.input-images') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    Input Images
+                </a>
                 <a href="{{ route('customer.ai-studio') }}"
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.ai-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                     Generate Images
@@ -32,15 +39,9 @@
                     My Gallery
                 </a>
 
-                <a href="{{ route('customer.blender-studio') }}"
-                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.blender-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
-                    Blender Studio
-                </a>
 
-                <a href="{{ route('customer.input-images') }}"
-                   class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.input-images') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
-                    Input Images
-                </a>
+
+
             </nav>
 
             <div class="p-4 border-t border-slate-800">

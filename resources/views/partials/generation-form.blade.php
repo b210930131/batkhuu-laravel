@@ -130,8 +130,14 @@
                 <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
                     <div class="space-y-3">
                         <label for="controlImageInput" class="block text-sm font-medium text-slate-700">Control Image</label>
-                        <input type="file" id="controlImageInput" accept="image/*"
-                            class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                            <input type="file" id="controlImageInput" accept="image/*"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700">
+                            <button id="chooseInputImageBtn" type="button"
+                                class="inline-flex items-center justify-center rounded-xl border border-transparent bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                                Input images
+                            </button>
+                        </div>
                         <p class="text-xs text-slate-500">Upload an image to guide the generation.</p>
                         <div id="controlPreview" class="overflow-hidden rounded-2xl"></div>
                     </div>
@@ -338,16 +344,87 @@
     <div class="space-y-6">
         <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white">
-                <h2 class="text-lg font-semibold">Generated Images Gallery</h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Generated Images Gallery</h2>
+                    <span id="galleryCount" class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-slate-100">
+                        0 images
+                    </span>
+                </div>
             </div>
 
-            <div id="images" class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
-                <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">
-                    🎨 No images yet<br>
-                    <span class="text-xs">Your generated images will appear here</span>
+            <div class="space-y-4 p-5">
+                <div id="galleryStatus" class="hidden rounded-2xl border px-4 py-3 text-sm font-medium"></div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="mb-3">
+                        <div class="inline-flex w-fit items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+                            Folder
+                        </div>
+                        <h3 class="mt-3 text-lg font-bold tracking-tight text-slate-900">Library Control</h3>
+                    </div>
+
+                    <form id="folderForm" class="rounded-2xl bg-white p-3">
+                        <label for="folderName" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">New folder</label>
+                        <div class="flex items-center gap-2">
+                            <input id="folderName" name="folder_name" type="text" maxlength="80" placeholder="Name"
+                                class="min-w-0 flex-1 rounded-xl border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <button type="submit"
+                                class="shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                                Add
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button type="button" data-folder-filter="all"
+                            class="folder-filter flex w-full items-center justify-between rounded-xl bg-white px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-100">
+                            <span>All images</span>
+                            <span id="allCount" class="text-xs text-slate-500">0</span>
+                        </button>
+                        <button type="button" data-folder-filter="unfiled"
+                            class="folder-filter flex w-full items-center justify-between rounded-xl bg-white px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-100">
+                            <span>Unfiled</span>
+                            <span id="unfiledCount" class="text-xs text-slate-500">0</span>
+                        </button>
+                    </div>
+
+                    <div class="mt-4 border-t border-slate-200 pt-3">
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Folders</div>
+                        <div id="folderList" class="space-y-1.5"></div>
+                    </div>
+                </div>
+
+                <div id="images" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">
+                        🎨 No images yet<br>
+                        <span class="text-xs">Your generated images will appear here</span>
+                    </div>
                 </div>
             </div>
         </section>
+    </div>
+</div>
+
+<div id="inputImagePickerModal" class="fixed inset-0 z-50 hidden bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="mx-auto flex max-h-[92vh] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900">Choose Input Image</h3>
+                <p class="mt-1 text-sm text-slate-500">Select an existing input image for ControlNet.</p>
+            </div>
+            <button type="button" onclick="closeInputImagePicker()"
+                class="rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                Close
+            </button>
+        </div>
+
+        <div id="inputImagePickerStatus" class="hidden border-b border-slate-200 px-5 py-3 text-sm font-medium"></div>
+
+        <div id="inputImagePickerGrid" class="grid min-h-0 flex-1 grid-cols-2 gap-4 overflow-y-auto p-5 sm:grid-cols-3 lg:grid-cols-4">
+            <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center text-slate-400">
+                Loading input images...
+            </div>
+        </div>
     </div>
 </div>
 
@@ -355,6 +432,10 @@
 let currentPreprocessor = 'canny';
 let currentControlImage = null;
 let isGenerating = false;
+let galleryImages = [];
+let galleryFolders = [];
+let activeFolder = 'all';
+let inputImageChoices = [];
 
 const preprocessors = [
     { id: 'canny', name: 'Canny', icon: '🔲' },
@@ -558,6 +639,153 @@ async function prepareControlImage(file) {
     return compressedDataUrl.length < originalDataUrl.length ? compressedDataUrl : originalDataUrl;
 }
 
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function setGalleryStatus(message, type = 'info') {
+    const el = document.getElementById('galleryStatus');
+    if (!el) return;
+
+    const styles = {
+        info: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        error: 'border-rose-200 bg-rose-50 text-rose-700',
+    };
+
+    el.className = `rounded-2xl border px-4 py-3 text-sm font-medium ${styles[type] || styles.info}`;
+    el.textContent = message;
+    el.classList.remove('hidden');
+}
+
+function setInputImagePickerStatus(message, type = 'info') {
+    const el = document.getElementById('inputImagePickerStatus');
+    if (!el) return;
+
+    const styles = {
+        info: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        error: 'border-rose-200 bg-rose-50 text-rose-700',
+    };
+
+    el.className = `border-b px-5 py-3 text-sm font-medium ${styles[type] || styles.info}`;
+    el.textContent = message;
+    el.classList.remove('hidden');
+}
+
+function renderInputImageChoices() {
+    const grid = document.getElementById('inputImagePickerGrid');
+    if (!grid) return;
+
+    if (!inputImageChoices.length) {
+        grid.innerHTML = '<div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center text-slate-400">No input images found.</div>';
+        return;
+    }
+
+    grid.innerHTML = inputImageChoices.map(img => {
+        const imageUrl = `/${img.path}`;
+        return `
+            <button type="button" onclick="selectInputImage(${img.id})"
+                class="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg">
+                <div class="aspect-square overflow-hidden bg-slate-100">
+                    <img src="${imageUrl}" alt="${escapeHtml(img.file_name)}"
+                        class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]">
+                </div>
+                <div class="space-y-1 p-3">
+                    <p class="truncate text-sm font-semibold text-slate-800">${escapeHtml(img.file_name)}</p>
+                    <p class="text-xs text-slate-500">${escapeHtml(img.preprocessor || img.source_type || 'input')}</p>
+                </div>
+            </button>
+        `;
+    }).join('');
+}
+
+async function loadInputImageChoices() {
+    const response = await fetch('/customer/api/input-images', { headers: { 'Accept': 'application/json' } });
+    const images = await response.json();
+    if (!response.ok) throw new Error(images.message || 'Failed to load input images');
+    inputImageChoices = (images || []).filter(img => img.path);
+}
+
+async function openInputImagePicker() {
+    const modal = document.getElementById('inputImagePickerModal');
+    const grid = document.getElementById('inputImagePickerGrid');
+    if (!modal || !grid) return;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    grid.innerHTML = '<div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center text-slate-400">Loading input images...</div>';
+    setInputImagePickerStatus('Loading input images...', 'info');
+
+    try {
+        await loadInputImageChoices();
+        renderInputImageChoices();
+        setInputImagePickerStatus(`Loaded ${inputImageChoices.length} input image(s).`, 'success');
+    } catch (error) {
+        grid.innerHTML = `<div class="col-span-full rounded-2xl border border-rose-200 bg-rose-50 px-5 py-14 text-center text-rose-600">Failed to load input images: ${escapeHtml(error.message)}</div>`;
+        setInputImagePickerStatus(`Input image error: ${error.message}`, 'error');
+    }
+}
+
+function closeInputImagePicker() {
+    const modal = document.getElementById('inputImagePickerModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function imageUrlToDataUrl(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.onerror = () => reject(new Error('Could not load selected input image'));
+        img.src = url;
+    });
+}
+
+async function selectInputImage(id) {
+    const selected = inputImageChoices.find(img => Number(img.id) === Number(id));
+    if (!selected) return;
+
+    const imageUrl = `/${selected.path}`;
+    setInputImagePickerStatus('Selecting image...', 'info');
+
+    try {
+        currentControlImage = await imageUrlToDataUrl(imageUrl);
+        document.getElementById('controlImageInput').value = '';
+        document.getElementById('controlPreview').innerHTML = `
+            <img src="${imageUrl}" class="max-h-64 w-full rounded-2xl border border-slate-200 bg-white object-contain p-2">
+            <div class="mt-2 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700">
+                Selected: ${escapeHtml(selected.file_name)}
+            </div>
+        `;
+        updateControlNetStatus();
+        closeInputImagePicker();
+        setStatus('✅ Control image selected from input images.', 'success');
+    } catch (error) {
+        setInputImagePickerStatus(`Select error: ${error.message}`, 'error');
+    }
+}
+
 function setupSliders() {
     const bindValue = (id, outId, format = (v) => v) => {
         const el = document.getElementById(id);
@@ -602,43 +830,195 @@ async function refreshGallery() {
     if (!galleryDiv) return;
 
     try {
-        const response = await fetch('/api/images');
-        const images = await response.json();
-
-        if (!images || images.length === 0) {
-            galleryDiv.innerHTML = `
-                <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">
-                    🎨 No images yet<br>
-                    <span class="text-xs">Your generated images will appear here</span>
-                </div>
-            `;
-            return;
-        }
-
-        galleryDiv.innerHTML = images.map(img => {
-            if (!img.file_name) {
-                return `
-                    <div class="flex aspect-square items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 p-4 text-center text-slate-500">
-                        <div>
-                            🎨 Painting...<br>
-                            <small>${img.prompt_id.substring(0, 8)}</small>
-                        </div>
-                    </div>
-                `;
-            }
-
-            return `
-                <div class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <img src="/outputs/${img.file_name}" onclick="window.open(this.src, '_blank')" class="aspect-square w-full cursor-pointer object-cover">
-                    <div class="flex items-center justify-between gap-2 border-t border-slate-100 p-3">
-                        <span class="truncate text-xs text-slate-500">${img.file_name}</span>
-                        <button class="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700" onclick="downloadImage('${img.file_name}', '${img.subfolder || ''}', '${img.type || 'output'}')">Download</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        await Promise.all([loadFolders(), loadImages()]);
+        renderFolders();
+        renderImages();
     } catch (error) {
         console.error('Gallery error:', error);
+        galleryDiv.innerHTML = `<div class="col-span-full rounded-2xl border border-rose-200 bg-rose-50 px-6 py-16 text-center text-rose-600">Failed to load gallery: ${error.message}</div>`;
+        setGalleryStatus(`Gallery error: ${error.message}`, 'error');
+    }
+}
+
+async function loadFolders() {
+    const response = await fetch('/customer/api/folders', { headers: { 'Accept': 'application/json' } });
+    const folders = await response.json();
+    if (!response.ok) throw new Error(folders.message || 'Failed to load folders');
+    galleryFolders = folders || [];
+}
+
+async function loadImages() {
+    const response = await fetch('/customer/api/images', { headers: { 'Accept': 'application/json' } });
+    const images = await response.json();
+    if (!response.ok) throw new Error(images.message || 'Failed to load images');
+    galleryImages = images || [];
+}
+
+function visibleImages() {
+    const completed = galleryImages.filter(img => img.file_name);
+    if (activeFolder === 'all') return completed;
+    if (activeFolder === 'unfiled') return completed.filter(img => !img.gallery_folder_id);
+    return completed.filter(img => Number(img.gallery_folder_id) === Number(activeFolder));
+}
+
+function renderFolders() {
+    const allCount = galleryImages.filter(img => img.file_name).length;
+    const unfiledCount = galleryImages.filter(img => img.file_name && !img.gallery_folder_id).length;
+    document.getElementById('allCount').textContent = allCount;
+    document.getElementById('unfiledCount').textContent = unfiledCount;
+    document.getElementById('galleryCount').textContent = `${allCount} images`;
+
+    document.querySelectorAll('.folder-filter').forEach(button => {
+        const value = button.dataset.folderFilter;
+        const active = String(activeFolder) === String(value);
+        button.className = `folder-filter flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100'}`;
+    });
+
+    const folderList = document.getElementById('folderList');
+    if (!galleryFolders.length) {
+        folderList.innerHTML = '<div class="rounded-xl border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">No folders yet.</div>';
+        return;
+    }
+
+    folderList.innerHTML = galleryFolders.map(folder => {
+        const count = galleryImages.filter(img => Number(img.gallery_folder_id) === Number(folder.id)).length;
+        const active = String(activeFolder) === String(folder.id);
+        return `
+            <div class="flex items-center gap-2">
+                <button type="button" data-folder-filter="${folder.id}"
+                    class="folder-filter min-w-0 flex-1 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100'}">
+                    <span class="block truncate">${escapeHtml(folder.name)}</span>
+                    <span class="block text-xs ${active ? 'text-indigo-100' : 'text-slate-500'}">${count}</span>
+                </button>
+                <button type="button" onclick="deleteFolder(${folder.id}, '${escapeHtml(folder.name)}')"
+                    class="rounded-xl border border-rose-200 px-2.5 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">
+                    Delete
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    document.querySelectorAll('[data-folder-filter]').forEach(button => {
+        button.addEventListener('click', () => {
+            activeFolder = button.dataset.folderFilter;
+            renderFolders();
+            renderImages();
+        });
+    });
+}
+
+function folderOptions(image) {
+    const options = ['<option value="">Unfiled</option>'].concat(
+        galleryFolders.map(folder => `<option value="${folder.id}" ${Number(image.gallery_folder_id) === Number(folder.id) ? 'selected' : ''}>${escapeHtml(folder.name)}</option>`)
+    );
+    return options.join('');
+}
+
+function renderImages() {
+    const galleryDiv = document.getElementById('images');
+    const images = visibleImages();
+
+    if (!images.length) {
+        galleryDiv.innerHTML = `
+            <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center text-slate-400">
+                🎨 No images found<br>
+                <span class="text-xs">Your generated images will appear here</span>
+            </div>
+        `;
+        return;
+    }
+
+    galleryDiv.innerHTML = images.map(img => {
+        const imageUrl = `/api/comfyui/view?filename=${encodeURIComponent(img.file_name)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`;
+        const folder = galleryFolders.find(item => Number(item.id) === Number(img.gallery_folder_id));
+
+        return `
+            <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <img src="${imageUrl}" onclick="window.open(this.src, '_blank')" class="aspect-square w-full cursor-pointer object-cover">
+                <div class="space-y-3 border-t border-slate-100 p-3">
+                    <div>
+                        <p class="truncate text-xs font-semibold text-slate-700">${escapeHtml(img.file_name)}</p>
+                        <p class="mt-1 text-xs text-slate-500">${escapeHtml(folder ? folder.name : 'Unfiled')}</p>
+                    </div>
+
+                    <label class="block text-xs font-semibold text-slate-600">
+                        Move to folder
+                        <select name="gallery_folder_id" onchange="moveImage(${img.id}, this.value)"
+                            class="mt-1 w-full rounded-xl border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            ${folderOptions(img)}
+                        </select>
+                    </label>
+
+                    <button class="w-full rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700" onclick="downloadImage('${img.file_name}', '${img.subfolder || ''}', '${img.type || 'output'}')">Download</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+async function createFolder(event) {
+    event.preventDefault();
+    const nameInput = document.getElementById('folderName');
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    try {
+        const response = await fetch('/customer/api/folders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ name })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Folder create failed');
+        nameInput.value = '';
+        activeFolder = String(result.id);
+        await refreshGallery();
+        setGalleryStatus('Folder created.', 'success');
+    } catch (error) {
+        setGalleryStatus(`Folder error: ${error.message}`, 'error');
+    }
+}
+
+async function deleteFolder(id, name) {
+    if (!confirm(`Delete folder "${name}"? Images will move to Unfiled.`)) return;
+
+    try {
+        const response = await fetch(`/customer/api/folders/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' }
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Folder delete failed');
+        activeFolder = 'all';
+        await refreshGallery();
+        setGalleryStatus('Folder deleted.', 'success');
+    } catch (error) {
+        setGalleryStatus(`Folder delete error: ${error.message}`, 'error');
+    }
+}
+
+async function moveImage(id, folderId) {
+    try {
+        const response = await fetch(`/customer/api/images/${id}/folder`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ folder_id: folderId ? Number(folderId) : null })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Move failed');
+        await refreshGallery();
+        setGalleryStatus('Image moved.', 'success');
+    } catch (error) {
+        setGalleryStatus(`Move error: ${error.message}`, 'error');
+        refreshGallery();
     }
 }
 
@@ -934,6 +1314,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const refreshBtn = document.getElementById('refreshGalleryBtn');
     if (refreshBtn) refreshBtn.onclick = refreshGallery;
+
+    document.getElementById('folderForm')?.addEventListener('submit', createFolder);
+    document.getElementById('chooseInputImageBtn')?.addEventListener('click', openInputImagePicker);
+    document.getElementById('inputImagePickerModal')?.addEventListener('click', event => {
+        if (event.target === event.currentTarget) closeInputImagePicker();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeInputImagePicker();
+    });
 
     const interruptBtn = document.getElementById('interruptBtn');
     if (interruptBtn) interruptBtn.onclick = interruptGeneration;

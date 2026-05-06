@@ -21,10 +21,17 @@
                    class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                     Dashboard
                 </a>
-
+                <a href="{{ route('admin.blender-studio') }}"
+                   class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.blender-studio') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                    Blender Studio
+                </a>
+                <a href="{{ route('admin.input-images') }}"
+                   class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.input-images') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                    Input Images
+                </a>
                 <a href="{{ route('admin.ai-studio') }}"
                    class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.ai-studio') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                    Admin Studio
+                    Admin Generate Studio
                 </a>
 
                 <a href="{{ route('admin.gallery') }}"
@@ -32,15 +39,9 @@
                     Admin Gallery
                 </a>
 
-                <a href="{{ route('admin.blender-studio') }}"
-                   class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.blender-studio') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                    Blender Studio
-                </a>
 
-                <a href="{{ route('admin.input-images') }}"
-                   class="block rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('admin.input-images') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                    Input Images
-                </a>
+
+
 
                 <a href="{{ route('customer.dashboard') }}"
                    class="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">

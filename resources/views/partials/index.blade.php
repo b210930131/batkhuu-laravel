@@ -22,8 +22,7 @@
                     </h1>
 
                     <p class="mt-4 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
-                        Stable Diffusion, ControlNet болон gallery хэсгүүд рүү
-                        хурдан шилжих, турших, удирдах зориулалттай нүүр хуудас.
+                        Stable Diffusion, ControlNet болон Blender image generation ашиглаад зураг үүсгэх систем.
                     </p>
 
                     <div class="mt-6 flex flex-wrap gap-3">
