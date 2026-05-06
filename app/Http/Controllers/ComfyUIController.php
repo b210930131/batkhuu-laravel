@@ -1035,18 +1035,43 @@ public function adminInputImages()
 }
 public function customerAiStudio()
 {
-     $images = \App\Models\GeneratedImage::with(['user', 'galleryFolder'])
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    return view('imagegen.customer.pages.customer', compact('images'));
+    return $this->aiStudioView('customer');
 }
+
 public function adminAiStudio()
 {
-    $images = \App\Models\GeneratedImage::with(['user', 'galleryFolder'])
-        ->orderBy('created_at', 'desc')
-        ->get();
+    return $this->aiStudioView('admin');
+}
 
-    return view('imagegen.admin.pages.admin', compact('images'));
+protected function aiStudioView(string $panel)
+{
+    $isAdmin = $panel === 'admin';
+
+    return view('imagegen.shared.ai-studio', [
+        'layout' => $isAdmin ? 'imagegen.admin.layouts.app' : 'imagegen.customer.layouts.app',
+        'title' => $isAdmin ? 'Admin Studio' : 'Generate Images',
+        'pageTitle' => $isAdmin ? 'Admin Studio' : 'Generate Images',
+        'pageSubtitle' => $isAdmin
+            ? 'Generate images, use ControlNet, and manage all outputs'
+            : 'Create stylish AI-generated images with modern controls',
+        'panelLabel' => $isAdmin ? 'Admin' : 'Customer',
+        'heroTitle' => $isAdmin ? 'Full Generation Control Center' : 'Generation Control Center',
+        'heroSubtitle' => $isAdmin
+            ? 'Full model selection, ControlNet preprocessing, and gallery management from one admin page.'
+            : 'Model selection, ControlNet preprocessing, and your gallery management from one page.',
+        'accessLabel' => $isAdmin ? 'Admin' : 'Customer',
+        'featureLabel' => $isAdmin ? 'Full Studio' : 'Studio',
+        'workspaceHint' => $isAdmin ? 'Full admin generation workspace' : 'Customer generation workspace',
+        'studioBadge' => $isAdmin ? 'Admin Studio' : 'Customer Studio',
+        'canChooseFolderUser' => $isAdmin,
+        'studioRoutes' => [
+            'requiresFolderUser' => $isAdmin,
+            'inputImages' => $isAdmin ? url('/admin/api/input-images') : url('/customer/api/input-images'),
+            'folders' => $isAdmin ? url('/admin/api/folders') : url('/customer/api/folders'),
+            'images' => $isAdmin ? url('/admin/api/images') : url('/customer/api/images'),
+            'imageFolderBase' => $isAdmin ? url('/admin/gallery') : url('/customer/api/images'),
+            'imageDeleteBase' => $isAdmin ? url('/admin/gallery/delete') : url('/customer/api/images'),
+        ],
+    ]);
 }
 }

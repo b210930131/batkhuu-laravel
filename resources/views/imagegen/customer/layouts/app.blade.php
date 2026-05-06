@@ -36,7 +36,7 @@
 
                 <a href="{{ route('customer.gallery') }}"
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.gallery') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
-                    My Gallery
+                    Gallery
                 </a>
 
 

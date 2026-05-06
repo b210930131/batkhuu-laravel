@@ -37,5 +37,13 @@ class User extends Authenticatable
         return $this->hasMany(GeneratedImage::class);
     }
 
+    public function inputImages()
+    {
+        return $this->hasMany(InputImage::class);
+    }
 
+    public function folders()
+    {
+        return $this->hasMany(GalleryFolder::class);
+    }
 }

@@ -6,6 +6,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ComfyUIController;
 use App\Http\Controllers\BlenderController;
 use App\Http\Middleware\IsAdmin;
+use App\Http\Controllers\Admin\AdminManagementController;
+use App\Http\Controllers\Admin\DashboardPostController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,13 +50,8 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('customer')->name('customer.')->group(function () {
-        Route::view('/dashboard', 'dashboard', [
-            'dashboardLayout' => 'imagegen.customer.layouts.app',
-            'dashboardTitle' => 'Customer Dashboard',
-            'dashboardHeading' => 'Customer Dashboard',
-            'dashboardSubtitle' => 'AI platform overview',
-        ])->name('dashboard');
-        Route::view('/ai-studio', 'imagegen.customer.pages.customer')->name('ai-studio');
+        Route::get('/dashboard', [DashboardController::class, 'customer'])->name('dashboard');
+        Route::get('/ai-studio', [ComfyUIController::class, 'customerAiStudio'])->name('ai-studio');
         Route::get('/blender-studio', [BlenderController::class, 'customerStudio'])->name('blender-studio');
         Route::get('/gallery', [ComfyUIController::class, 'customerGallery'])->name('gallery');
         Route::get('/input-images', [ComfyUIController::class, 'customerInputImages'])->name('input-images');
@@ -76,12 +74,13 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
  Route::middleware([IsAdmin::class])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/dashboard', 'dashboard', [
-        'dashboardLayout' => 'imagegen.admin.layouts.app',
-        'dashboardTitle' => 'Admin Dashboard',
-        'dashboardHeading' => 'Admin Dashboard',
-        'dashboardSubtitle' => 'AI platform overview',
-    ])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+    Route::get('/users', [AdminManagementController::class, 'users'])->name('users.index');
+    Route::post('/users', [AdminManagementController::class, 'storeUser'])->name('users.store');
+    Route::patch('/users/{user}/toggle', [AdminManagementController::class, 'toggleUser'])->name('users.toggle');
+    Route::get('/statistics', [AdminManagementController::class, 'statistics'])->name('statistics');
+    Route::get('/management', [AdminManagementController::class, 'management'])->name('management');
+    Route::resource('/posts', DashboardPostController::class)->except(['show']);
     Route::get('/ai-studio', [ComfyUIController::class, 'adminAiStudio'])->name('ai-studio');
     Route::get('/blender-studio', [BlenderController::class, 'adminStudio'])->name('blender-studio');
     Route::get('/gallery', [ComfyUIController::class, 'adminGallery'])->name('gallery');
