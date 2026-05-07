@@ -15,7 +15,7 @@ class CheckAdminRole
         
         // Customer хэрэглэгчийг customer панел руу чиглүүлэх
         if (auth()->check() && auth()->user()->role === 'customer') {
-            return redirect('/customer');
+            return redirect('/customer/dashboard');
         }
         
         return redirect('/login');

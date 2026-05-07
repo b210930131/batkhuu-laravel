@@ -35,7 +35,10 @@ class LoginController extends Controller
             }
 
             $request->session()->regenerate();
-            return redirect()->intended('dashboard');
+
+            return redirect()->route(
+                $user->role === 'admin' ? 'admin.dashboard' : 'customer.dashboard'
+            );
         }
 
         return back()->withErrors([

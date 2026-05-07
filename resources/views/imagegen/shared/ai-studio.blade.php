@@ -173,21 +173,19 @@
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
-                        <div class="space-y-3">
-                            <label for="controlImageInput" class="block text-sm font-medium text-slate-700">Control Image</label>
-                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                                <input type="file" id="controlImageInput" accept="image/*"
-                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700">
-                                <button id="chooseInputImageBtn" type="button"
-                                    class="inline-flex items-center justify-center rounded-xl border border-transparent bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
-                                    Input images
-                                </button>
-                            </div>
-                            <p class="text-xs text-slate-500">Upload an image to guide generation.</p>
-                            <div id="controlPreview" class="overflow-hidden rounded-2xl"></div>
-                        </div>
-                    </div>
+	                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+	                        <div class="space-y-3">
+	                            <div class="flex items-center justify-between gap-3">
+	                                <label class="block text-sm font-medium text-slate-700">Control Image</label>
+	                                <button id="chooseInputImageBtn" type="button"
+	                                    class="inline-flex items-center justify-center rounded-xl border border-transparent bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
+	                                    Input images
+	                                </button>
+	                            </div>
+	                            <p class="text-xs text-slate-500">Choose or upload an input image to guide generation.</p>
+	                            <div id="controlPreview" class="overflow-hidden rounded-2xl"></div>
+	                        </div>
+	                    </div>
 
                     <div class="flex flex-col gap-3 md:flex-row">
                         <button id="generateBtn"
@@ -456,9 +454,10 @@
     </div>
 </div>
 
-<div id="inputImagePickerModal" class="fixed inset-0 z-50 hidden bg-slate-950/70 p-4 backdrop-blur-sm">
-    <div class="mx-auto flex max-h-[92vh] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
+<div id="inputImagePickerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        style="width: 75vw; max-width: 1180px; min-width: min(94vw, 720px); height: 75vh; max-height: 75vh;">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div>
                 <h3 class="text-lg font-bold text-slate-900">Choose Input Image</h3>
                 <p class="mt-1 text-sm text-slate-500">Select an existing input image for ControlNet.</p>
@@ -469,10 +468,19 @@
             </button>
         </div>
 
-        <div id="inputImagePickerStatus" class="hidden border-b border-slate-200 px-5 py-3 text-sm font-medium"></div>
+        <div id="inputImagePickerStatus" class="hidden border-b border-slate-200 px-5 py-2 text-sm font-medium"></div>
 
-        <div id="inputImagePickerGrid" class="grid min-h-0 flex-1 grid-cols-2 gap-4 overflow-y-auto p-5 sm:grid-cols-3 lg:grid-cols-4">
-            <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center text-slate-400">
+        <div class="border-b border-slate-200 bg-slate-50 px-5 py-3">
+            <div class="grid items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-3 md:grid-cols-[180px_minmax(0,1fr)]">
+                <label for="controlImageInput" class="text-sm font-semibold text-slate-800">Upload new input image</label>
+                <input type="file" id="controlImageInput" accept="image/*"
+                    class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700">
+            </div>
+        </div>
+
+        <div id="inputImagePickerGrid" class="grid min-h-0 flex-1 auto-rows-max grid-cols-1 gap-4 overflow-y-auto p-5 lg:grid-cols-2"
+            style="overflow-y: auto; overscroll-behavior: contain;">
+            <div class="col-span-full flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-slate-400">
                 Loading input images...
             </div>
         </div>
@@ -493,6 +501,9 @@ let inputImageChoices = [];
 const preprocessors = [
     { id: 'canny', name: 'Canny', icon: '🔲' },
     { id: 'depth', name: 'Depth', icon: '🗺️' },
+    { id: 'sd35_canny', name: 'ControlNet 3.5 Canny', icon: '🔲' },
+    { id: 'sd35_depth', name: 'ControlNet 3.5 Depth', icon: '🗺️' },
+    { id: 'sd35_blur', name: 'ControlNet 3.5 Blur', icon: '🌫️' },
     { id: 'openpose', name: 'OpenPose', icon: '🧍' },
     { id: 'mlsd', name: 'MLSD', icon: '📐' },
     { id: 'scribble', name: 'Scribble', icon: '✏️' },
@@ -505,6 +516,9 @@ function getPreprocessorName(id) {
     const names = {
         canny: 'Canny Edge',
         depth: 'Depth Map',
+        sd35_canny: 'ControlNet 3.5 Canny',
+        sd35_depth: 'ControlNet 3.5 Depth',
+        sd35_blur: 'ControlNet 3.5 Blur',
         openpose: 'OpenPose',
         mlsd: 'MLSD',
         scribble: 'Scribble',
@@ -593,6 +607,19 @@ function buildPreprocessorUI() {
 function selectPreprocessor(id) {
     currentPreprocessor = id;
 
+    if (id.startsWith('sd35_')) {
+        const modelSelect = document.getElementById('model');
+        const sd35Model = Array.from(modelSelect?.options || [])
+            .find(option => option.value.toLowerCase().includes('sd3.5'));
+
+        if (sd35Model && modelSelect.value !== sd35Model.value) {
+            modelSelect.value = sd35Model.value;
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+
+        applySD35ControlNetDefaults();
+    }
+
     document.querySelectorAll('.preprocessor-btn').forEach(btn => {
         if (btn.getAttribute('data-id') === id) {
             btn.className = 'preprocessor-btn rounded-2xl border border-indigo-500 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-4 text-left text-white shadow-md transition';
@@ -605,9 +632,34 @@ function selectPreprocessor(id) {
         panel.classList.add('hidden');
     });
 
-    const selectedPanel = document.getElementById(`${id}Settings`);
+    const settingsPanelId = {
+        sd35_canny: 'canny',
+        sd35_depth: 'depth'
+    }[id] || id;
+    const selectedPanel = document.getElementById(`${settingsPanelId}Settings`);
     if (selectedPanel) selectedPanel.classList.remove('hidden');
 
+    updateControlNetStatus();
+}
+
+function setFieldValue(id, value) {
+    const field = document.getElementById(id);
+    if (!field) return;
+    field.value = value;
+    field.dispatchEvent(new Event('input'));
+    field.dispatchEvent(new Event('change'));
+}
+
+function applySD35ControlNetDefaults() {
+    setFieldValue('steps', 35);
+    setFieldValue('cfg', 5);
+    setFieldValue('width', 768);
+    setFieldValue('height', 320);
+    setFieldValue('sampler', 'dpmpp_2m');
+    setFieldValue('scheduler', 'normal');
+    setFieldValue('cnStrength', 0.55);
+    setFieldValue('cnStart', 0);
+    setFieldValue('cnEnd', 1);
     updateControlNetStatus();
 }
 
@@ -633,15 +685,20 @@ function setupImageUpload() {
             return;
         }
 
-        try {
-            currentControlImage = await prepareControlImage(file);
-            if (preview) {
-                preview.innerHTML = `
-                    <img src="${currentControlImage}" class="max-h-64 w-full rounded-2xl border border-slate-200 object-contain bg-white p-2">
-                `;
-            }
-            updateControlNetStatus();
-        } catch (error) {
+	        try {
+	            currentControlImage = await prepareControlImage(file);
+	            if (preview) {
+	                preview.innerHTML = `
+	                    <img src="${currentControlImage}" class="max-h-64 w-full rounded-2xl border border-slate-200 object-contain bg-white p-2">
+	                    <div class="mt-2 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700">
+	                        Uploaded: ${escapeHtml(file.name)}
+	                    </div>
+	                `;
+	            }
+	            updateControlNetStatus();
+	            closeInputImagePicker();
+	            setStatus('Control image uploaded.', 'success');
+	        } catch (error) {
             console.error('Image upload error:', error);
             alert(error.message || 'Failed to load image');
             input.value = '';
@@ -719,20 +776,27 @@ function renderInputImageChoices() {
     if (!grid) return;
 
     if (!inputImageChoices.length) {
-        grid.innerHTML = '<div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center text-slate-400">No input images found.</div>';
+        grid.innerHTML = `
+            <div class="col-span-full flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-slate-400">
+                No input images found.
+            </div>
+        `;
         return;
     }
 
     grid.innerHTML = inputImageChoices.map(img => {
         const imageUrl = `/${img.path}`;
+
         return `
             <button type="button" onclick="selectInputImage(${img.id})"
-                class="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg">
-                <div class="aspect-square overflow-hidden bg-slate-100">
+                class="group rounded-2xl border border-slate-200 bg-white p-2 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
+
+                <div class="relative mx-auto aspect-[5/9] w-full max-w-[220px] overflow-hidden rounded-xl bg-slate-100">
                     <img src="${imageUrl}" alt="${escapeHtml(img.file_name)}"
-                        class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]">
+                        class="h-full w-full object-contain p-2">
                 </div>
-                <div class="space-y-1 p-3">
+
+                <div class="mt-2 space-y-1 border-t border-slate-100 p-3">
                     <p class="truncate text-sm font-semibold text-slate-800">${escapeHtml(inputImageOwnerLabel(img))}</p>
                     <p class="truncate text-xs text-slate-500">${escapeHtml(img.file_name)}</p>
                     <p class="text-xs text-slate-500">${escapeHtml(img.preprocessor || img.source_type || 'input')}</p>
@@ -1305,10 +1369,12 @@ async function generate() {
     if (payload.controlnet) {
         switch (currentPreprocessor) {
             case 'canny':
+            case 'sd35_canny':
                 payload.controlnet.canny_low = parseInt(document.getElementById('cannyLowThreshold')?.value || 50) / 255;
                 payload.controlnet.canny_high = parseInt(document.getElementById('cannyHighThreshold')?.value || 150) / 255;
                 break;
             case 'depth':
+            case 'sd35_depth':
                 payload.controlnet.depth_resolution = parseInt(document.getElementById('depthResolution')?.value || 512);
                 break;
             case 'openpose':

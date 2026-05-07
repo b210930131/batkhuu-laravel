@@ -35,7 +35,9 @@ require __DIR__.'/auth.php';
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        return redirect()->route(
+            auth()->user()->role === 'admin' ? 'admin.dashboard' : 'customer.dashboard'
+        );
     })->middleware('verified')->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

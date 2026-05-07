@@ -47,6 +47,8 @@ class ComfyUIController extends Controller
             'controlnet.preprocessor' => 'nullable|string',
             'controlnet.image_base64' => 'nullable|string',
             'controlnet.strength' => 'nullable|numeric',
+            'controlnet.start_percent' => 'nullable|numeric',
+            'controlnet.end_percent' => 'nullable|numeric',
         ]);
 
         $clientId = $validated['client_id'] ?? 'laravel_' . uniqid();
@@ -271,9 +273,23 @@ class ComfyUIController extends Controller
      */
     protected function buildControlNetWorkflow(array $p)
     {
+        $controlnetType = $p['controlnet']['preprocessor'] ?? 'canny';
+        $isSD35ControlNet = str_starts_with($controlnetType, 'sd35_');
+
+        if ($isSD35ControlNet && !str_contains(strtolower($p['model']), 'sd3.5')) {
+            $p['model'] = 'sd3.5_large_fp8_scaled.safetensors';
+        }
+
+        if ($isSD35ControlNet) {
+            $p['steps'] = max((int)($p['steps'] ?? 35), 35);
+            $p['cfg'] = (float)($p['cfg'] ?? 5);
+            $p['scheduler'] = $p['scheduler'] ?? 'normal';
+            $p['controlnet']['strength'] = (float)($p['controlnet']['strength'] ?? 0.55);
+        }
+
         $filename = $this->saveBase64Image(
             $p['controlnet']['image_base64'],
-            $p['controlnet']['preprocessor'] ?? 'canny'
+            $controlnetType
         );
         
         return [
@@ -290,7 +306,7 @@ class ComfyUIController extends Controller
                     "denoise" => 1,
                     "model" => ["4", 0],
                     "positive" => ["13", 0],
-                    "negative" => ["7", 0],
+                    "negative" => $isSD35ControlNet ? ["13", 1] : ["7", 0],
                     "latent_image" => ["5", 0]
                 ]
             ],
@@ -338,14 +354,26 @@ class ComfyUIController extends Controller
                 "class_type" => "LoadImage",
                 "inputs" => ["image" => $filename]
             ],
-            "11" => $this->getPreprocessorNode($p['controlnet']['preprocessor'] ?? 'canny', "10"),
+            "11" => $this->getPreprocessorNode($controlnetType, "10"),
             "12" => [
                 "class_type" => "ControlNetLoader",
                 "inputs" => [
-                    "control_net_name" => $this->getControlNetModel($p['controlnet']['preprocessor'] ?? 'canny')
+                    "control_net_name" => $this->getControlNetModel($controlnetType)
                 ]
             ],
-            "13" => [
+            "13" => $isSD35ControlNet ? [
+                "class_type" => "ControlNetApplySD3",
+                "inputs" => [
+                    "positive" => ["6", 0],
+                    "negative" => ["7", 0],
+                    "control_net" => ["12", 0],
+                    "vae" => ["4", 2],
+                    "image" => ["11", 0],
+                    "strength" => (float)($p['controlnet']['strength'] ?? 0.85),
+                    "start_percent" => (float)($p['controlnet']['start_percent'] ?? 0.0),
+                    "end_percent" => (float)($p['controlnet']['end_percent'] ?? 1.0)
+                ]
+            ] : [
                 "class_type" => "ControlNetApply",
                 "inputs" => [
                     "strength" => (float)($p['controlnet']['strength'] ?? 0.85),
@@ -662,6 +690,29 @@ class ComfyUIController extends Controller
                 "resolution" => 512
             ]
         ],
+        'sd35_canny' => [
+            "class_type" => "Canny",
+            "inputs" => [
+                "image" => [$imgNode, 0],
+                "low_threshold" => 0.1,
+                "high_threshold" => 0.8
+            ]
+        ],
+        'sd35_depth' => [
+            "class_type" => "DepthAnythingPreprocessor",
+            "inputs" => [
+                "image" => [$imgNode, 0],
+                "resolution" => 512
+            ]
+        ],
+        'sd35_blur' => [
+            "class_type" => "ImageBlur",
+            "inputs" => [
+                "image" => [$imgNode, 0],
+                "blur_radius" => 5,
+                "sigma" => 1.0
+            ]
+        ],
     ];
     
     return $nodes[$type] ?? $nodes['canny'];
@@ -678,6 +729,9 @@ class ComfyUIController extends Controller
         'hed' => 'control_sd15_hed.pth',
         'seg' => 'control_sd15_seg.pth',
         'normal' => 'control_sd15_normal.pth',
+        'sd35_canny' => 'sd3.5_large_controlnet_canny-fp8.safetensors',
+        'sd35_depth' => 'sd3.5_large_controlnet_depth-fp8.safetensors',
+        'sd35_blur' => 'sd3.5_large_controlnet_blur-fp8.safetensors',
     ];
     
     // For SDXL models, use SDXL ControlNets if available
