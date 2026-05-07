@@ -80,7 +80,7 @@ class ComfyUIController extends Controller
 
         if ($isSDXL || $hasRefiner) {
             $workflow = $this->buildSDXLWorkflow($validated);
-        } elseif (!empty($validated['controlnet']['enabled'])) {
+        } elseif (!empty($validated['controlnet']['enabled']) && !empty($validated['controlnet']['image_base64'])) {
             $workflow = $this->buildControlNetWorkflow($validated);
         } else {
             $workflow = $this->buildBaseWorkflow($validated);

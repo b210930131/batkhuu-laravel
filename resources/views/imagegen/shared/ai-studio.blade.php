@@ -586,12 +586,20 @@ function setButtonLoading(btn, loading, loadingText = 'Processing...') {
     }
 }
 
+function hasActiveControlImage() {
+    return typeof currentControlImage === 'string' && currentControlImage.trim() !== '';
+}
+
+function readyStatusMessage() {
+    return hasActiveControlImage() ? 'Ready • ControlNet ready' : 'Ready • ControlNet inactive';
+}
+
 function updateControlNetStatus() {
     const dot = document.getElementById('controlnetStatusDot');
     const text = document.getElementById('controlnetText');
     const details = document.getElementById('controlnetDetails');
     const topDot = document.getElementById('controlnetDot');
-    const hasImage = currentControlImage !== null;
+    const hasImage = hasActiveControlImage();
 
     if (!dot || !text || !details || !topDot) return;
 
@@ -1313,7 +1321,7 @@ async function pollForResults(promptId) {
 
                 isGenerating = false;
                 setButtonLoading(document.getElementById('generateBtn'), false);
-                setTimeout(() => setStatus('✅ Ready • ControlNet ready', 'success'), 2500);
+                setTimeout(() => setStatus(`✅ ${readyStatusMessage()}`, 'success'), 2500);
             }
 
             if (attempts >= maxAttempts) {
@@ -1422,7 +1430,7 @@ async function generate() {
 
     const selectedModel = document.getElementById('model').value;
     const isSDXL = selectedModel.toLowerCase().includes('sdxl');
-    const hasControlImage = currentControlImage !== null;
+    const hasControlImage = hasActiveControlImage();
 
     const payload = {
         client_id: 'client_' + Date.now(),
