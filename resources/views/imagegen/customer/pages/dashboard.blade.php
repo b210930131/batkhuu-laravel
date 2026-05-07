@@ -20,7 +20,7 @@
 
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('customer.ai-studio') }}" class="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
-                    Generate Images
+                    AI Studio
                 </a>
                 <a href="{{ route('customer.gallery') }}" class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
                     My Gallery

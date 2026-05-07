@@ -1,7 +1,7 @@
 @extends('imagegen.customer.layouts.app')
 
-@section('title', 'Generate Images')
-@section('page_title', 'Generate Images')
+@section('title', 'AI Studio')
+@section('page_title', 'AI Studio')
 @section('page_subtitle', 'Create stylish AI-generated images with modern controls')
 
 @section('content')

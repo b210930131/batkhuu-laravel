@@ -31,7 +31,7 @@
                 </a>
                 <a href="{{ route('customer.ai-studio') }}"
                    class="block rounded-xl px-4 py-3 transition {{ request()->routeIs('customer.ai-studio') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
-                    Generate Images
+                    AI Studio
                 </a>
 
                 <a href="{{ route('customer.gallery') }}"

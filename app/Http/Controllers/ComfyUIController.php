@@ -39,6 +39,7 @@ class ComfyUIController extends Controller
             'steps' => 'integer|min:1|max:100',
             'refiner_steps' => 'nullable|integer|min:1|max:100',
             'cfg' => 'numeric|min:1|max:20',
+            'denoise' => 'nullable|numeric|min:0|max:1',
             'width' => 'integer|min:256|max:1536',
             'height' => 'integer|min:256|max:1536',
             'sampler' => 'string',
@@ -169,7 +170,7 @@ class ComfyUIController extends Controller
                     "cfg" => $p['cfg'] ?? 7,
                     "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
                     "scheduler" => "karras",
-                    "denoise" => 1.0,
+                    "denoise" => (float)($p['denoise'] ?? 1.0),
                     "model" => ["4", 0],
                     "positive" => ["6", 0],
                     "negative" => ["7", 0],
@@ -188,7 +189,7 @@ class ComfyUIController extends Controller
                     "cfg" => $p['cfg'] ?? 7,
                     "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',
                     "scheduler" => "karras",
-                    "denoise" => 1.0, 
+                    "denoise" => (float)($p['denoise'] ?? 1.0), 
                     "model" => ["14", 0],
                     "positive" => ["15", 0],
                     "negative" => ["16", 0],
@@ -218,7 +219,7 @@ class ComfyUIController extends Controller
                     "cfg" => $p['cfg'] ?? 7,
                     "sampler_name" => $p['sampler'] ?? 'euler',
                     "scheduler" => "normal",
-                    "denoise" => 1,
+                    "denoise" => (float)($p['denoise'] ?? 1),
                     "model" => ["4", 0],
                     "positive" => ["6", 0],
                     "negative" => ["7", 0],
@@ -303,7 +304,7 @@ class ComfyUIController extends Controller
                     "sampler_name" => $p['sampler'] ?? 'dpmpp_2m',  // Өөрчлөх
                     // "scheduler" => "normal",
                     "scheduler" => $p['scheduler'] ?? 'normal', // Scheduler тусад нь
-                    "denoise" => 1,
+                    "denoise" => (float)($p['denoise'] ?? 1),
                     "model" => ["4", 0],
                     "positive" => ["13", 0],
                     "negative" => $isSD35ControlNet ? ["13", 1] : ["7", 0],
@@ -1103,20 +1104,20 @@ protected function aiStudioView(string $panel)
 
     return view('imagegen.shared.ai-studio', [
         'layout' => $isAdmin ? 'imagegen.admin.layouts.app' : 'imagegen.customer.layouts.app',
-        'title' => $isAdmin ? 'Admin Studio' : 'Generate Images',
-        'pageTitle' => $isAdmin ? 'Admin Studio' : 'Generate Images',
+        'title' => 'AI Studio',
+        'pageTitle' => 'EiT',
         'pageSubtitle' => $isAdmin
             ? 'Generate images, use ControlNet, and manage all outputs'
             : 'Create stylish AI-generated images with modern controls',
         'panelLabel' => $isAdmin ? 'Admin' : 'Customer',
-        'heroTitle' => $isAdmin ? 'Full Generation Control Center' : 'Generation Control Center',
+        'heroTitle' => $isAdmin ? 'Image Generation Control Center' : 'Creative Workspace',
         'heroSubtitle' => $isAdmin
-            ? 'Full model selection, ControlNet preprocessing, and gallery management from one admin page.'
+            ? 'Full model selection, ControlNet preprocessing, and gallery management from one page.'
             : 'Model selection, ControlNet preprocessing, and your gallery management from one page.',
         'accessLabel' => $isAdmin ? 'Admin' : 'Customer',
         'featureLabel' => $isAdmin ? 'Full Studio' : 'Studio',
         'workspaceHint' => $isAdmin ? 'Full admin generation workspace' : 'Customer generation workspace',
-        'studioBadge' => $isAdmin ? 'Admin Studio' : 'Customer Studio',
+        'studioBadge' => $isAdmin ? 'Admin Tools' : 'Creator Tools',
         'canChooseFolderUser' => $isAdmin,
         'studioRoutes' => [
             'requiresFolderUser' => $isAdmin,

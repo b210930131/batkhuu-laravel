@@ -73,25 +73,42 @@
 </div>
 
 
-<div id="imageModal" class="fixed inset-0 z-50 hidden bg-slate-950/70 p-4 backdrop-blur-sm">
-    <div class="mx-auto flex max-h-[92vh] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div class="flex min-w-0 flex-1 items-center justify-center bg-slate-950 p-4">
-            <img id="modalImage" src="" alt="Generated image" class="max-h-[84vh] max-w-full rounded-xl object-contain">
+<div id="imageModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+
+    <div class="overflow-hidden rounded-2xl bg-white shadow-2xl"
+        style="display:grid;grid-template-columns:minmax(680px,820px) minmax(360px,1fr);width:min(1540px,calc(100vw - 32px));height:min(92vh,880px);">
+
+        <!-- Image area -->
+        <div class="flex min-w-0 items-center justify-center bg-slate-950 p-4">
+            <img id="modalImage"
+                src=""
+                alt="Generated image"
+                class="rounded-xl object-contain"
+                style="max-width:780px;width:100%;max-height:820px;">
         </div>
 
-        <aside class="w-96 shrink-0 overflow-y-auto border-l border-slate-200 p-5">
+        <!-- Details area -->
+        <aside class="min-w-0 overflow-y-auto border-l border-slate-200 bg-white p-5">
             <div class="mb-4 flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <h3 id="modalTitle" class="truncate text-lg font-bold text-slate-900">Image details</h3>
-                    <p id="modalMeta" class="mt-1 text-xs text-slate-500"></p>
+                <div class="min-w-0 flex-1">
+                    <h3 id="modalTitle"
+                        class="break-words text-base font-bold leading-snug text-slate-900">
+                        Image details
+                    </h3>
+
+                    <p id="modalMeta"
+                        class="mt-1 break-words text-xs leading-relaxed text-slate-500">
+                    </p>
                 </div>
+
                 <button type="button" onclick="closeImageModal()"
-                    class="rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                    class="shrink-0 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
                     Close
                 </button>
             </div>
 
-            <div id="modalDetails" class="space-y-4 text-sm"></div>
+            <div id="modalDetails" class="text-sm"></div>
         </aside>
     </div>
 </div>
@@ -139,13 +156,19 @@ function compatibleFolders(image) {
     return galleryFolders.filter(folder => Number(folder.user_id) === Number(image.user_id));
 }
 
+function detailCard(label, value, tone = 'slate', span = '') {
+    const text = value ? escapeHtml(value) : 'Not provided.';
+    const tones = {
+        green: 'bg-emerald-50 text-emerald-700',
+        red: 'bg-rose-50 text-rose-700',
+        blue: 'bg-indigo-50 text-indigo-700',
+        slate: 'bg-slate-50 text-slate-500',
+    };
 
-function detailBlock(label, value) {
-    const text = value ? escapeHtml(value) : 'Empty';
     return `
-        <div>
-            <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">${label}</div>
-            <div class="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-700">${text}</div>
+        <div class="${span} rounded-2xl ${tones[tone] || tones.slate} p-4">
+            <div class="text-xs font-bold uppercase tracking-wide">${escapeHtml(label)}</div>
+            <p class="mt-3 text-sm text-slate-700" style="white-space:normal;overflow-wrap:break-word;word-break:normal;line-height:1.75;max-width:620px;">${text}</p>
         </div>
     `;
 }
@@ -156,22 +179,27 @@ function openImageModal(id, imageUrl) {
 
     const folder = galleryFolders.find(item => Number(item.id) === Number(img.gallery_folder_id));
     const modal = document.getElementById('imageModal');
+
     document.getElementById('modalImage').src = imageUrl;
     document.getElementById('modalTitle').textContent = img.file_name || 'Generated image';
+
     document.getElementById('modalMeta').textContent = [
         `ID ${img.id}`,
         folder ? folder.name : 'Unfiled',
         img.user?.name || null,
     ].filter(Boolean).join(' · ');
 
-    document.getElementById('modalDetails').innerHTML = [
-        detailBlock('Original', img.original_prompt),
-        detailBlock('Canonical', img.canonical_prompt || img.positive_prompt),
-        detailBlock('Positive prompt', img.positive_prompt),
-        detailBlock('Model', img.model_used),
-        detailBlock('Size', img.width && img.height ? `${img.width} x ${img.height}` : ''),
-        detailBlock('Type', img.type || 'output'),
-    ].join('');
+    document.getElementById('modalDetails').innerHTML = `
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            ${detailCard('Original', img.original_prompt, 'slate', 'xl:col-span-2')}
+            ${detailCard('Canonical', img.canonical_prompt || img.positive_prompt, 'blue', 'xl:col-span-2')}
+            ${detailCard('Positive prompt', img.positive_prompt, 'green')}
+            ${detailCard('Negative prompt', img.negative_prompt, 'red')}
+            ${detailCard('Model', img.model_used, 'slate')}
+            ${detailCard('Size', img.width && img.height ? `${img.width} x ${img.height}` : '', 'slate')}
+            ${detailCard('Type', img.type || 'output', 'slate', 'xl:col-span-2')}
+        </div>
+    `;
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -257,13 +285,20 @@ function renderImages() {
     }
 
     gallery.innerHTML = images.map(img => {
+        const directUrl = `/outputs/${img.subfolder ? `${encodeURIComponent(img.subfolder)}/` : ''}${encodeURIComponent(img.file_name)}`;
         const imageUrl = `/api/comfyui/view?filename=${encodeURIComponent(img.file_name)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`;
         const folder = galleryFolders.find(item => Number(item.id) === Number(img.gallery_folder_id));
 
         return `
             <article class="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
                 <div class="relative aspect-square overflow-hidden bg-slate-100">
-                    <img src="${imageUrl}" alt="Generated image" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" onclick="openImageModal(${img.id}, this.src)">
+                    <img
+                        src="${directUrl}"
+                        alt="Generated image"
+                        class="h-full w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.03]"
+                        onclick="openImageModal(${img.id}, this.src)"
+                        onerror="this.onerror=null; this.src='${imageUrl}'"
+                    >
                 </div>
 
                 <div class="space-y-3 p-4">

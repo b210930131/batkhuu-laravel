@@ -1,7 +1,7 @@
 @extends('imagegen.admin.layouts.app')
 
-@section('title', 'Admin Studio')
-@section('page_title', 'Admin Studio')
+@section('title', 'AI Studio')
+@section('page_title', 'AI Studio')
 @section('page_subtitle', 'Generate images, use ControlNet, and manage all outputs')
 
 @section('content')
@@ -12,7 +12,7 @@
         <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <div class="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-slate-100">
-                    ADMIN AI STUDIO
+                    AI Studio
                 </div>
                 <h1 class="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
                     Full Generation Control Center
@@ -47,7 +47,7 @@
                             <p class="mt-1 text-sm text-slate-300">Full admin generation workspace</p>
                         </div>
                         <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-slate-100">
-                            Admin Studio
+                            AI Studio
                         </span>
                     </div>
                 </div>

@@ -28,7 +28,7 @@
                     <div class="mt-6 flex flex-wrap gap-3">
                         <a href="{{ route('customer.ai-studio') }}"
                            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-700">
-                            Customer Studio
+                            AI Studio
                         </a>
 
                         <a href="{{ route('customer.gallery') }}"
@@ -39,7 +39,7 @@
                         @if ($isAdmin)
                             <a href="{{ route('admin.ai-studio') }}"
                                class="inline-flex items-center justify-center rounded-xl border border-indigo-300/20 bg-slate-800/70 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-700">
-                                Admin AI Studio
+                                AI Studio
                             </a>
                         @endif
                     </div>

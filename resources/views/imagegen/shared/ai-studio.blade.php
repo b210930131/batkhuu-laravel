@@ -12,7 +12,7 @@
         <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <div class="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-slate-100">
-                    {{ strtoupper($panelLabel) }} AI STUDIO
+                    AI STUDIO
                 </div>
                 <h1 class="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
                     {{ $heroTitle }}
@@ -22,14 +22,10 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
                 <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
                     <div class="text-xs uppercase tracking-wider text-slate-300">Access</div>
                     <div class="mt-2 text-xl font-bold">{{ $accessLabel }}</div>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                    <div class="text-xs uppercase tracking-wider text-slate-300">Features</div>
-                    <div class="mt-2 text-xl font-bold">{{ $featureLabel }}</div>
                 </div>
             </div>
         </div>
@@ -133,6 +129,13 @@
                             <label for="cfg" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">CFG Scale</label>
                             <input type="number" id="cfg" value="7.0" step="0.5" min="1" max="20"
                                 class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="denoise" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Denoise</label>
+                            <input type="number" id="denoise" value="1.0" min="0" max="1" step="0.05"
+                                class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100">
+                            <p class="text-[11px] leading-4 text-slate-500">0.0 = keep input, 1.0 = full redraw</p>
                         </div>
 
                         <div class="space-y-2">
@@ -484,6 +487,30 @@
                 Loading input images...
             </div>
         </div>
+    </div>
+</div>
+
+<div id="imageModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="overflow-hidden rounded-2xl bg-white shadow-2xl"
+        style="display:grid;grid-template-columns:minmax(680px,820px) minmax(360px,1fr);width:min(1540px,calc(100vw - 32px));height:min(92vh,880px);">
+        <div class="flex min-w-0 items-center justify-center bg-slate-950 p-4">
+            <img id="modalImage" src="" alt="Generated image" class="rounded-xl object-contain" style="max-width:780px;width:100%;max-height:820px;">
+        </div>
+
+        <aside class="min-w-0 overflow-y-auto border-l border-slate-200 bg-white p-5">
+            <div class="mb-4 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h3 id="modalTitle" class="truncate text-lg font-bold text-slate-900">Image details</h3>
+                    <p id="modalMeta" class="mt-1 text-xs text-slate-500"></p>
+                </div>
+                <button type="button" onclick="closeImageModal()"
+                    class="rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                    Close
+                </button>
+            </div>
+
+            <div id="modalDetails" class="text-sm"></div>
+        </aside>
     </div>
 </div>
 
@@ -950,6 +977,60 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
+function detailCard(label, value, tone = 'slate', span = '') {
+    const text = value ? escapeHtml(value) : 'Not provided.';
+    const tones = {
+        green: 'bg-emerald-50 text-emerald-700',
+        red: 'bg-rose-50 text-rose-700',
+        blue: 'bg-indigo-50 text-indigo-700',
+        slate: 'bg-slate-50 text-slate-500',
+    };
+
+    return `
+        <div class="${span} rounded-2xl ${tones[tone] || tones.slate} p-4">
+            <div class="text-xs font-bold uppercase tracking-wide">${escapeHtml(label)}</div>
+            <p class="mt-3 text-sm text-slate-700" style="white-space:normal;overflow-wrap:break-word;word-break:normal;line-height:1.75;max-width:620px;">${text}</p>
+        </div>
+    `;
+}
+
+function openImageModal(id, imageUrl) {
+    const img = galleryImages.find(item => Number(item.id) === Number(id));
+    if (!img) return;
+
+    const folder = galleryFolders.find(item => Number(item.id) === Number(img.gallery_folder_id));
+    const modal = document.getElementById('imageModal');
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalTitle').textContent = img.file_name || 'Generated image';
+    document.getElementById('modalMeta').textContent = [
+        `ID ${img.id}`,
+        folder ? folder.name : 'Unfiled',
+        img.user?.name || null,
+    ].filter(Boolean).join(' · ');
+
+    document.getElementById('modalDetails').innerHTML = `
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            ${detailCard('Original', img.original_prompt, 'slate', 'xl:col-span-2')}
+            ${detailCard('Canonical', img.canonical_prompt || img.positive_prompt, 'blue', 'xl:col-span-2')}
+            ${detailCard('Positive prompt', img.positive_prompt, 'green')}
+            ${detailCard('Negative prompt', img.negative_prompt, 'red')}
+            ${detailCard('Model', img.model_used, 'slate')}
+            ${detailCard('Size', img.width && img.height ? `${img.width} x ${img.height}` : '', 'slate')}
+            ${detailCard('Type', img.type || 'output', 'slate', 'xl:col-span-2')}
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.getElementById('modalImage').src = '';
+}
+
 function ownerLabel(image) {
     return image.user?.name || `User #${image.user_id}`;
 }
@@ -1036,7 +1117,7 @@ function renderImages() {
         return `
             <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                 <div class="relative aspect-square overflow-hidden bg-slate-100">
-                    <img src="${imageUrl}" alt="Generated image" class="h-full w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.03]" onclick="window.open('${imageUrl}','_blank')">
+                    <img src="${imageUrl}" alt="Generated image" class="h-full w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.03]" onclick="openImageModal(${img.id}, this.src)">
                 </div>
 
                 <div class="space-y-3 p-3">
@@ -1350,6 +1431,7 @@ async function generate() {
         negative_prompt: document.getElementById('negative_prompt').value,
         steps: parseInt(document.getElementById('steps').value),
         cfg: parseFloat(document.getElementById('cfg').value),
+        denoise: parseFloat(document.getElementById('denoise').value),
         width: parseInt(document.getElementById('width').value),
         height: parseInt(document.getElementById('height').value),
         sampler: document.getElementById('sampler').value,
@@ -1465,8 +1547,14 @@ async function interruptGeneration() {
                     document.getElementById('inputImagePickerModal')?.addEventListener('click', event => {
                         if (event.target === event.currentTarget) closeInputImagePicker();
                     });
+                    document.getElementById('imageModal')?.addEventListener('click', event => {
+                        if (event.target === event.currentTarget) closeImageModal();
+                    });
                     document.addEventListener('keydown', event => {
-                        if (event.key === 'Escape') closeInputImagePicker();
+                        if (event.key === 'Escape') {
+                            closeInputImagePicker();
+                            closeImageModal();
+                        }
                     });
 
                     const interruptBtn = document.getElementById('interruptBtn');
